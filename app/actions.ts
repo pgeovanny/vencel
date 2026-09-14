@@ -1,0 +1,6 @@
+'use server';
+import { redirect } from 'next/navigation';import { createClient } from '@/lib/supabase/server';
+export async function login(formData:FormData){const sb=await createClient();const email=String(formData.get('email')||'').trim(),password=String(formData.get('password')||'');const{error}=await sb.auth.signInWithPassword({email,password});if(error)redirect('/?error='+encodeURIComponent('E-mail ou senha inválidos.'));redirect('/dashboard')}
+export async function logout(){const sb=await createClient();await sb.auth.signOut();redirect('/')}
+export async function requestReset(formData:FormData){const sb=await createClient();const email=String(formData.get('email')||'').trim(),origin=String(formData.get('origin')||'');const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:`${origin}/auth/callback?next=/reset-password`});redirect('/forgot-password?sent='+(error?'0':'1'))}
+export async function updatePassword(formData:FormData){const sb=await createClient();const p1=String(formData.get('password')||''),p2=String(formData.get('confirm')||'');if(p1.length<8||p1!==p2)redirect('/reset-password?error=1');const{error}=await sb.auth.updateUser({password:p1});if(error)redirect('/reset-password?error=1');redirect('/dashboard?password=updated')}
