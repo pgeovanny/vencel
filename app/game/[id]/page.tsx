@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import GameRuntime from '@/components/game-runtime-studio';
+import GameRuntime from '@/components/game-runtime-pro';
 
 export default async function Game({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,12 +19,11 @@ export default async function Game({ params }: { params: Promise<{ id: string }>
   const mission: any = missionRow.mission_json;
   if (!mission || mission.schema !== 'jurisquest.mission.v2') notFound();
 
-  const [{ data: character }, { data: progress }, { data: presets }, { data: runtimeSettings }] = await Promise.all([
+  const [{ data: character }, { data: progress }, { data: runtimeSettings }] = await Promise.all([
     missionRow.syllabus_id
       ? sb.from('student_characters').select('*').eq('user_id', user.id).eq('syllabus_id', missionRow.syllabus_id).maybeSingle()
       : Promise.resolve({ data: null }),
     sb.from('mission_progress').select('*').eq('user_id', user.id).eq('mission_id', id).maybeSingle(),
-    sb.from('game_visual_presets').select('slug,name,description,category,config').eq('active', true).order('sort_order'),
     sb.from('game_runtime_settings').select('*').eq('id', 1).maybeSingle(),
   ]);
 
@@ -34,23 +33,12 @@ export default async function Game({ params }: { params: Promise<{ id: string }>
     archetype: 'operational',
   };
 
-  const safeProgress = progress
-    ? {
-        ...progress,
-        runtime_state: {
-          ...(progress.runtime_state || {}),
-          started: false,
-        },
-      }
-    : null;
-
   return <GameRuntime
     missionId={missionRow.id}
     mission={mission}
     userId={user.id}
     initialCharacter={initialCharacter}
-    initialProgress={safeProgress}
-    visualPresets={presets || []}
+    initialProgress={progress || null}
     runtimeSettings={runtimeSettings || null}
   />;
 }
