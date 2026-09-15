@@ -41,7 +41,7 @@ export default async function Dashboard(){
       <div className="ey">SESSÃO DE HOJE</div>
       <h1>{dailyTitle}</h1>
       <p className="muted">{dailyText}</p>
-      <div className="row"><a className="btn primary" href={dailyHref}>{dueCount?'Revisar agora':nextMission?(inProgress?'Continuar missão':'Iniciar missão'):'Abrir Arquivo de Casos'}</a><a className="btn" href="/review">Central de Revisão</a><a className="btn" href="/archive">Arquivo de Casos</a>{visibleSyllabi.map((s:any)=><a className="btn" key={s.id} href={`/syllabus/${s.id}`}>Mapa do Edital</a>)}{isAdmin===true&&<a className="btn" href="/admin">ADM</a>}<form action={logout}><button className="btn">Sair</button></form></div>
+      <div className="row"><a className="btn primary" href={dailyHref}>{dueCount?'Revisar agora':nextMission?(inProgress?'Continuar missão':'Iniciar missão'):'Abrir Arquivo de Casos'}</a><a className="btn" href="/review">Central de Revisão</a><a className="btn" href="/archive">Arquivo de Casos</a>{visibleSyllabi.map((s:any)=><a className="btn" key={s.id} href={`/syllabus/${s.id}`}>Mapa do Edital</a>)}{trial&&<a className="btn" href="/premium">Ver Premium</a>}{isAdmin===true&&<a className="btn" href="/admin">ADM</a>}<form action={logout}><button className="btn">Sair</button></form></div>
       {trial&&<p className="muted" style={{marginBottom:0,fontSize:11}}>Acesso de teste ativo{trialDays!=null?` • ${trialDays} dia${trialDays===1?'':'s'} restante${trialDays===1?'':'s'}`:''}. O progresso fica salvo na sua conta.</p>}
     </section>
 
@@ -68,7 +68,7 @@ export default async function Dashboard(){
           <p className="muted">{m.summary}</p>
           <div style={{height:5,background:'#07161b',borderRadius:99,overflow:'hidden',margin:'16px 0 8px'}}><i style={{display:'block',height:'100%',width:`${pct}%`,background:'linear-gradient(90deg,#67d5dd,#e5bd58)'}}/></div>
           <p className="muted" style={{fontSize:11}}>{done?`Missão concluída${p?.score_best!=null?` • melhor resultado ${Number(p.score_best)}%`:''}`:pct>0?`${pct}% concluído`:'Pronta para iniciar'}</p>
-          {available&&done?<div style={{display:'flex',gap:8,flexWrap:'wrap'}}><a className="btn primary" href={`/game/${m.mission_id}?mode=replay`}>Refazer missão</a><a className="btn" href={`/game/${m.mission_id}?mode=explore`}>Explorar cenários</a><a className="btn" href="/review">Revisões</a></div>:available?<a className="btn primary" href={`/game/${m.mission_id}`}>{pct>0?'Continuar missão':'Jogar missão'}</a>:<div><button className="btn" disabled>Conteúdo premium</button><p className="muted" style={{fontSize:10}}>A missão faz parte da campanha completa do edital.</p></div>}
+          {available&&done?<div style={{display:'flex',gap:8,flexWrap:'wrap'}}><a className="btn primary" href={`/game/${m.mission_id}?mode=replay`}>Refazer missão</a><a className="btn" href={`/game/${m.mission_id}?mode=explore`}>Explorar cenários</a><a className="btn" href="/review">Revisões</a></div>:available?<a className="btn primary" href={`/game/${m.mission_id}`}>{pct>0?'Continuar missão':'Jogar missão'}</a>:<div><a className="btn primary" href="/premium">Conhecer Premium</a><p className="muted" style={{fontSize:10}}>Libere a continuação da campanha, revisões e cobertura completa do edital.</p></div>}
         </article>;
       })}
     </section>
