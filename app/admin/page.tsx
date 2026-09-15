@@ -1,1 +1,35 @@
-import { redirect } from 'next/navigation';import { createClient } from '@/lib/supabase/server';import { env } from '@/lib/env';export default async function Admin(){const sb=await createClient();const{data:{user}}=await sb.auth.getUser();if(!user)redirect('/');if((user.email||'').toLowerCase()!==env.ownerEmail)redirect('/dashboard');const{data:isAdmin}=await sb.rpc('is_admin');if(!isAdmin)redirect('/dashboard');const[{count:profiles},{count:attempts},{data:first}]=await Promise.all([sb.from('profiles').select('*',{count:'exact',head:true}),sb.from('decision_attempts').select('*',{count:'exact',head:true}),sb.from('mission_catalog').select('mission_id,title').eq('status','published').order('sequence_no').limit(1).maybeSingle()]);return <main className="shell"><section className="card"><div className="ey">ADMINISTRAÇÃO</div><h1>JurisQuest Control</h1><p className="muted">Autorização validada no servidor por e-mail + RPC administrativa.</p><div className="row">{first&&<a className="btn primary" href={`/game/${first.mission_id}`}>Testar primeira missão</a>}<a className="btn" href="/reset-password">Alterar minha senha</a></div></section><section className="grid"><div className="card"><div className="ey">USUÁRIOS</div><h1>{profiles??0}</h1></div><div className="card"><div className="ey">TENTATIVAS</div><h1>{attempts??0}</h1></div></section></main>}
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+
+export default async function Admin(){
+  const sb=await createClient();
+  const{data:{user}}=await sb.auth.getUser();
+  if(!user)redirect('/');
+
+  const{data:isAdmin}=await sb.rpc('is_admin');
+  if(!isAdmin)redirect('/dashboard');
+
+  const[{count:profiles},{count:attempts},{data:first}]=await Promise.all([
+    sb.from('profiles').select('*',{count:'exact',head:true}),
+    sb.from('decision_attempts').select('*',{count:'exact',head:true}),
+    sb.from('mission_catalog').select('mission_id,title').eq('status','published').order('sequence_no').limit(1).maybeSingle()
+  ]);
+
+  return <main className="shell">
+    <section className="card">
+      <div className="ey">ADMINISTRAÇÃO</div>
+      <h1>JurisQuest Control</h1>
+      <p className="muted">Autorização validada no servidor pelo papel administrativo armazenado no banco.</p>
+      <p className="muted">Sessão: {user.email}</p>
+      <div className="row">
+        {first&&<a className="btn primary" href={`/game/${first.mission_id}`}>Testar primeira missão</a>}
+        <a className="btn" href="/reset-password">Alterar minha senha</a>
+        <a className="btn" href="/dashboard">Voltar à campanha</a>
+      </div>
+    </section>
+    <section className="grid">
+      <div className="card"><div className="ey">USUÁRIOS</div><h1>{profiles??0}</h1></div>
+      <div className="card"><div className="ey">TENTATIVAS</div><h1>{attempts??0}</h1></div>
+    </section>
+  </main>;
+}
