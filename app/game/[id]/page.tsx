@@ -1,1 +1,44 @@
-import { redirect,notFound } from 'next/navigation';import { createClient } from '@/lib/supabase/server';export default async function Game({params}:{params:Promise<{id:string}>}){const{id}=await params;const sb=await createClient();const{data:{user}}=await sb.auth.getUser();if(!user)redirect('/');const{data:mission,error}=await sb.from('missions').select('id,title,summary,mission_json').eq('id',id).eq('status','published').maybeSingle();if(error||!mission)notFound();const mj:any=mission.mission_json;if(!mj||mj.schema!=='jurisquest.mission.v2')notFound();const first=[...(mj.stages||[])].sort((a:any,b:any)=>(a.order||0)-(b.order||0))[0];return <main className="shell"><section className="card"><div className="ey">RUNTIME V2</div><h1>{mission.title}</h1><p className="muted">{mission.summary}</p><p className="muted">Schema: {mj.schema} • {(mj.stages||[]).length} estágios • {(mj.decisions||[]).length} decisões.</p></section><section className="card"><div className="ey">PRIMEIRO ESTÁGIO</div><h2>{first?.title}</h2><p className="muted">{first?.subtitle}</p><div className="grid">{(first?.actors||[]).map((a:any)=><div className="card" key={a.id}><span className="tag">{a.role}</span><h2>{a.name}</h2><p className="muted">{a.goal}</p></div>)}</div></section></main>}
+import { notFound, redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import GameRuntime from '@/components/game-runtime';
+
+export default async function Game({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const sb = await createClient();
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) redirect('/');
+
+  const { data: missionRow, error } = await sb
+    .from('missions')
+    .select('id,title,summary,mission_json,syllabus_id')
+    .eq('id', id)
+    .eq('status', 'published')
+    .maybeSingle();
+
+  if (error || !missionRow) notFound();
+  const mission: any = missionRow.mission_json;
+  if (!mission || mission.schema !== 'jurisquest.mission.v2') notFound();
+
+  const [{ data: character }, { data: progress }] = await Promise.all([
+    missionRow.syllabus_id
+      ? sb.from('student_characters').select('*').eq('user_id', user.id).eq('syllabus_id', missionRow.syllabus_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    sb.from('mission_progress').select('*').eq('user_id', user.id).eq('mission_id', id).maybeSingle(),
+  ]);
+
+  const initialCharacter = character || {
+    character_name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'Jogador',
+    role_title: 'Candidato',
+    archetype: 'operational',
+  };
+
+  return (
+    <GameRuntime
+      missionId={missionRow.id}
+      mission={mission}
+      userId={user.id}
+      initialCharacter={initialCharacter}
+      initialProgress={progress || null}
+    />
+  );
+}
