@@ -7,7 +7,7 @@ type Status = 'idle' | 'loading' | 'done' | 'error';
 
 export default function Signup() {
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('geovanny9+novo@gmail.com');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [status, setStatus] = useState<Status>('idle');
@@ -39,7 +39,7 @@ export default function Signup() {
       });
 
       if (error || data?.error) {
-        const detail = data?.message || data?.error || error?.message || 'Falha ao criar a conta.';
+        const detail = data?.message || data?.error || error?.message || 'Não foi possível criar sua conta.';
         setStatus('error');
         setMessage(String(detail));
         return;
@@ -48,14 +48,14 @@ export default function Signup() {
       const userId = data?.user?.id;
       if (!userId) {
         setStatus('error');
-        setMessage('O servidor não confirmou a criação da conta.');
+        setMessage('Não foi possível confirmar a criação da conta. Tente novamente.');
         return;
       }
 
       const auth = await supabase.auth.signInWithPassword({ email: normalized, password });
       if (auth.error) {
         setStatus('done');
-        setMessage('Conta criada e confirmada. Volte ao login para entrar.');
+        setMessage('Conta criada. Entre com seu e-mail e senha para continuar.');
         return;
       }
 
@@ -67,22 +67,22 @@ export default function Signup() {
   }
 
   if (status === 'done') {
-    return <main className="shell"><section className="card center"><div className="ey">CONTA CRIADA</div><h1>Cadastro concluído</h1><p className="ok">{message}</p><a className="btn primary" href="/">Ir para o login</a></section></main>;
+    return <main className="shell"><section className="card center"><div className="ey">ACESSO CRIADO</div><h1>Cadastro concluído</h1><p className="ok">{message}</p><a className="btn primary" href="/">Entrar no JurisQuest</a></section></main>;
   }
 
   return (
     <main className="shell">
       <section className="card center">
-        <div className="ey">NOVO ACESSO</div>
+        <div className="ey">COMECE SUA CAMPANHA</div>
         <h1>Criar conta</h1>
-        <p className="muted">O cadastro só é confirmado quando o Supabase Auth retorna um usuário real. Erros do backend aparecem nesta tela.</p>
+        <p className="muted">Crie seu acesso ao JurisQuest. Seu progresso, decisões e revisões ficam vinculados à sua conta.</p>
         {status === 'error' && <p className="error">{message}</p>}
         <form onSubmit={submit}>
-          <div className="field"><label>NOME</label><input value={name} onChange={e=>setName(e.target.value)} required disabled={status==='loading'}/></div>
-          <div className="field"><label>E-MAIL</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} required disabled={status==='loading'}/></div>
-          <div className="field"><label>SENHA</label><input type="password" minLength={8} value={password} onChange={e=>setPassword(e.target.value)} required disabled={status==='loading'}/></div>
-          <div className="field"><label>CONFIRMAR</label><input type="password" minLength={8} value={confirm} onChange={e=>setConfirm(e.target.value)} required disabled={status==='loading'}/></div>
-          <button className="btn primary" type="submit" disabled={status==='loading'}>{status==='loading'?'Criando...':'Criar conta'}</button>
+          <div className="field"><label>NOME</label><input value={name} onChange={e=>setName(e.target.value)} autoComplete="name" required disabled={status==='loading'}/></div>
+          <div className="field"><label>E-MAIL</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" required disabled={status==='loading'}/></div>
+          <div className="field"><label>SENHA</label><input type="password" minLength={8} value={password} onChange={e=>setPassword(e.target.value)} autoComplete="new-password" required disabled={status==='loading'}/></div>
+          <div className="field"><label>CONFIRMAR SENHA</label><input type="password" minLength={8} value={confirm} onChange={e=>setConfirm(e.target.value)} autoComplete="new-password" required disabled={status==='loading'}/></div>
+          <button className="btn primary" type="submit" disabled={status==='loading'}>{status==='loading'?'Criando acesso...':'Criar conta'}</button>
         </form>
       </section>
     </main>
