@@ -1,10 +1,10 @@
 import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import GameRuntime from '@/components/game-runtime-pro-v2';
+import GameRuntime from '@/components/game-runtime-pro-v3';
 
-export default async function Game({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ mode?: string }> }) {
+export default async function Game({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ mode?: string; stage?: string }> }) {
   const { id } = await params;
-  const { mode } = await searchParams;
+  const { mode, stage } = await searchParams;
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) redirect('/');
@@ -34,7 +34,9 @@ export default async function Game({ params, searchParams }: { params: Promise<{
     archetype: 'operational',
   };
 
-  const replayMode = mode === 'replay' && progress?.status === 'completed';
+  const completed = progress?.status === 'completed';
+  const replayMode = mode === 'replay' && completed;
+  const exploreMode = mode === 'explore' && completed;
 
   return <GameRuntime
     missionId={missionRow.id}
@@ -44,5 +46,7 @@ export default async function Game({ params, searchParams }: { params: Promise<{
     initialProgress={progress || null}
     runtimeSettings={runtimeSettings || null}
     replayMode={replayMode}
+    exploreMode={exploreMode}
+    exploreStage={exploreMode ? stage || null : null}
   />;
 }
