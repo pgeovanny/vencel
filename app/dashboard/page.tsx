@@ -1,1 +1,40 @@
-import { redirect } from 'next/navigation';import { createClient } from '@/lib/supabase/server';import { logout } from '../actions';export default async function Dashboard(){const sb=await createClient();const{data:{user}}=await sb.auth.getUser();if(!user)redirect('/');const[{data:catalog},{data:missions},{data:progress}]=await Promise.all([sb.from('mission_catalog').select('*').eq('status','published').order('sequence_no'),sb.from('missions').select('id').eq('status','published'),sb.from('mission_progress').select('mission_id,status,progress_percent').eq('user_id',user.id)]);const ok=new Set((missions||[]).map(x=>x.id));return <main className="shell"><section className="card"><div className="ey">CAMPANHA</div><h1>Operações</h1><div className="row"><a className="btn" href="/admin">ADM</a><form action={logout}><button className="btn">Sair</button></form></div></section><section className="grid">{(catalog||[]).map((m:any)=>{const p=(progress||[]).find(x=>x.mission_id===m.mission_id);return <article className="card" key={m.mission_id}><span className="tag">{ok.has(m.mission_id)?'DISPONÍVEL':'PREMIUM'}</span><h2>{m.title}</h2><p className="muted">{m.summary}</p><p className="muted">{p?.status==='completed'?'Concluída':p?`${p.progress_percent}%`:'Não iniciada'}</p>{ok.has(m.mission_id)?<a className="btn primary" href={`/game/${m.mission_id}`}>Jogar</a>:<button className="btn" disabled>Bloqueada</button>}</article>})}</section></main>}
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import { logout } from '../actions';
+
+export default async function Dashboard(){
+  const sb=await createClient();
+  const{data:{user}}=await sb.auth.getUser();
+  if(!user)redirect('/');
+
+  const[{data:catalog},{data:missions},{data:progress}]=await Promise.all([
+    sb.from('mission_catalog').select('*').eq('status','published').order('sequence_no'),
+    sb.from('missions').select('id').eq('status','published'),
+    sb.from('mission_progress').select('mission_id,status,progress_percent').eq('user_id',user.id)
+  ]);
+
+  const ok=new Set((missions||[]).map(x=>x.id));
+
+  return <main className="shell">
+    <section className="card">
+      <div className="ey">CAMPANHA</div>
+      <h1>Operações</h1>
+      <div className="row">
+        <a className="btn" href="/admin">ADM</a>
+        <form action={logout}><button className="btn">Sair</button></form>
+      </div>
+    </section>
+    <section className="grid">
+      {(catalog||[]).map((m:any)=>{
+        const p=(progress||[]).find(x=>x.mission_id===m.mission_id);
+        return <article className="card" key={m.mission_id}>
+          <span className="tag">{ok.has(m.mission_id)?'DISPONÍVEL':'PREMIUM'}</span>
+          <h2>{m.title}</h2>
+          <p className="muted">{m.summary}</p>
+          <p className="muted">{p?.status==='completed'?'Concluída':p?`${p.progress_percent}%`:'Não iniciada'}</p>
+          {ok.has(m.mission_id)?<a className="btn primary" href={`/game/${m.mission_id}`}>Jogar</a>:<button className="btn" disabled>Bloqueada</button>}
+        </article>;
+      })}
+    </section>
+  </main>;
+}
