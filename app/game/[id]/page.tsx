@@ -1,9 +1,10 @@
 import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import GameRuntime from '@/components/game-runtime-pro';
+import GameRuntime from '@/components/game-runtime-pro-v2';
 
-export default async function Game({ params }: { params: Promise<{ id: string }> }) {
+export default async function Game({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ mode?: string }> }) {
   const { id } = await params;
+  const { mode } = await searchParams;
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) redirect('/');
@@ -33,6 +34,8 @@ export default async function Game({ params }: { params: Promise<{ id: string }>
     archetype: 'operational',
   };
 
+  const replayMode = mode === 'replay' && progress?.status === 'completed';
+
   return <GameRuntime
     missionId={missionRow.id}
     mission={mission}
@@ -40,5 +43,6 @@ export default async function Game({ params }: { params: Promise<{ id: string }>
     initialCharacter={initialCharacter}
     initialProgress={progress || null}
     runtimeSettings={runtimeSettings || null}
+    replayMode={replayMode}
   />;
 }
