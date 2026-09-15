@@ -34,12 +34,22 @@ export default async function Game({ params }: { params: Promise<{ id: string }>
     archetype: 'operational',
   };
 
+  const safeProgress = progress
+    ? {
+        ...progress,
+        runtime_state: {
+          ...(progress.runtime_state || {}),
+          started: false,
+        },
+      }
+    : null;
+
   return <GameRuntime
     missionId={missionRow.id}
     mission={mission}
     userId={user.id}
     initialCharacter={initialCharacter}
-    initialProgress={progress || null}
+    initialProgress={safeProgress}
     visualPresets={presets || []}
     runtimeSettings={runtimeSettings || null}
   />;
