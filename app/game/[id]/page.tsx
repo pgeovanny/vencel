@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import GameRuntime from '@/components/game-runtime-commercial';
+import GameRuntime from '@/components/game-runtime-paid';
 
 export default async function Game({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
