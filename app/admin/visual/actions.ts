@@ -21,53 +21,32 @@ const inputSchema = z.object({
 export async function saveMissionVisual(input: unknown) {
   const parsed = inputSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: 'Configuração visual inválida.' };
-
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return { ok: false, error: 'Sessão expirada.' };
   const { data: isAdmin } = await sb.rpc('is_admin');
   if (!isAdmin) return { ok: false, error: 'Acesso administrativo necessário.' };
-
   const { data: row, error: readError } = await sb.from('missions').select('mission_json').eq('id', parsed.data.missionId).maybeSingle();
   if (readError || !row) return { ok: false, error: 'Missão não encontrada.' };
-
   const mj: any = structuredClone(row.mission_json || {});
-  mj.visual_theme = {
-    ...(mj.visual_theme || {}),
-    style: 'anime_chibi_3q',
-    ui: parsed.data.uiTheme,
-    default_preset: parsed.data.defaultPreset,
-    contract: 'jurisquest.mission.v3-visual',
-  };
+  mj.visual_theme = { ...(mj.visual_theme || {}), style:'anime_chibi_3q', ui:parsed.data.uiTheme, default_preset:parsed.data.defaultPreset, contract:'jurisquest.mission.v3-visual' };
   mj.stages = (mj.stages || []).map((stage: any) => {
     const visual = parsed.data.stageVisuals[stage.id];
-    if (!visual) return stage;
-    return { ...stage, visual: { ...(stage.visual || {}), ...visual } };
+    return visual ? { ...stage, visual: { ...(stage.visual || {}), ...visual } } : stage;
   });
-
   const { error } = await sb.from('missions').update({ mission_json: mj, updated_at: new Date().toISOString() }).eq('id', parsed.data.missionId);
-  if (error) return { ok: false, error: error.message };
-  return { ok: true };
+  return error ? { ok:false, error:error.message } : { ok:true };
 }
 
 export async function saveRuntimeVisualDefaults(input: unknown) {
-  const schema = z.object({
-    defaultPreset: z.string().min(1).max(80),
-    rendererQuality: z.enum(['low','balanced','high']),
-    mobileQuality: z.enum(['low','balanced','high']),
-  });
+  const schema = z.object({ defaultPreset:z.string().min(1).max(80), rendererQuality:z.enum(['low','balanced','high']), mobileQuality:z.enum(['low','balanced','high']) });
   const parsed = schema.safeParse(input);
   if (!parsed.success) return { ok: false, error: 'Configuração inválida.' };
   const sb = await createClient();
-  const { data: { user } } await sb.auth.getUser();
+  const { data: { user } } = await sb.auth.getUser();
   if (!user) return { ok: false, error: 'Sessão expirada.' };
   const { data: isAdmin } = await sb.rpc('is_admin');
   if (!isAdmin) return { ok: false, error: 'Acesso administrativo necessário.' };
-  const { error } = await sb.from('game_runtime_settings').update({
-    default_preset: parsed.data.defaultPreset,
-    renderer_quality: parsed.data.rendererQuality,
-    mobile_quality: parsed.data.mobileQuality,
-    updated_at: new Date().toISOString(),
-  }).eq('id', 1);
-  return error ? { ok: false, error: error.message } : { ok: true };
+  const { error } = await sb.from('game_runtime_settings').update({ default_preset:parsed.data.defaultPreset, renderer_quality:parsed.data.rendererQuality, mobile_quality:parsed.data.mobileQuality, updated_at:new Date().toISOString() }).eq('id',1);
+  return error ? { ok:false, error:error.message } : { ok:true };
 }
