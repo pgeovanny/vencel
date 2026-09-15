@@ -3,7 +3,7 @@
 import { FormEvent, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
-type Status = 'idle' | 'loading' | 'sent' | 'error';
+type Status = 'idle' | 'loading' | 'sent' | 'error' | 'rate-limited';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -12,7 +12,7 @@ export default function ForgotPassword() {
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (status === 'loading') return;
+    if (status === 'loading' || status === 'rate-limited') return;
 
     const normalized = email.trim().toLowerCase();
     if (!normalized || !normalized.includes('@')) {
@@ -30,6 +30,16 @@ export default function ForgotPassword() {
       const { error } = await supabase.auth.resetPasswordForEmail(normalized, { redirectTo });
 
       if (error) {
+        const text = (error.message || '').toLowerCase();
+        const code = String((error as { code?: string }).code || '').toLowerCase();
+        const isRateLimit = text.includes('rate limit') || text.includes('too many') || code.includes('rate_limit');
+
+        if (isRateLimit) {
+          setStatus('rate-limited');
+          setMessage('O provedor de e-mail padrão do Supabase atingiu o limite do projeto. Não adianta clicar novamente agora.');
+          return;
+        }
+
         setStatus('error');
         setMessage(error.message || 'Não foi possível enviar o link de recuperação.');
         return;
@@ -53,9 +63,24 @@ export default function ForgotPassword() {
             Abra a caixa de entrada de <strong>{email.trim().toLowerCase()}</strong> e use o link de recuperação. O link deve retornar para o JurisQuest e abrir a tela de nova senha.
           </p>
           <div className="row">
-            <button className="btn" type="button" onClick={() => { setStatus('idle'); setMessage(''); }}>
-              Enviar novamente
-            </button>
+            <a className="btn primary" href="/">Voltar ao login</a>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (status === 'rate-limited') {
+    return (
+      <main className="shell">
+        <section className="card center">
+          <div className="ey">LIMITE DO PROVEDOR</div>
+          <h1>Envio temporariamente bloqueado</h1>
+          <p className="error">{message}</p>
+          <p className="muted">
+            O SMTP padrão do Supabase no plano gratuito tem limite global muito baixo para e-mails de autenticação. O botão fica bloqueado de propósito para evitar novas tentativas inúteis. Para produção, o JurisQuest deve usar SMTP transacional próprio.
+          </p>
+          <div className="row">
             <a className="btn primary" href="/">Voltar ao login</a>
           </div>
         </section>
