@@ -24,14 +24,21 @@ const inputSchema = z.object({
   actorVisuals: z.record(z.string(), z.record(z.string(),actorVisualSchema)).default({}),
 });
 
+const optionalUrl=z.string().trim().max(2000).refine(v=>!v||/^https:\/\//i.test(v),'Use uma URL HTTPS pública.');
+
+async function adminClient(){
+  const sb=await createClient();
+  const {data:{user}}=await sb.auth.getUser();
+  if(!user)return{sb:null,error:'Sessão expirada.'};
+  const{data:isAdmin}=await sb.rpc('is_admin');
+  if(!isAdmin)return{sb:null,error:'Acesso administrativo necessário.'};
+  return{sb,error:null};
+}
+
 export async function saveMissionVisual(input: unknown) {
   const parsed = inputSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: 'Configuração visual inválida.' };
-  const sb = await createClient();
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user) return { ok: false, error: 'Sessão expirada.' };
-  const { data: isAdmin } = await sb.rpc('is_admin');
-  if (!isAdmin) return { ok: false, error: 'Acesso administrativo necessário.' };
+  const auth=await adminClient(); if(!auth.sb)return{ok:false,error:auth.error}; const sb=auth.sb;
   const { data: row, error: readError } = await sb.from('missions_admin').select('mission_json').eq('id', parsed.data.missionId).maybeSingle();
   if (readError || !row) return { ok: false, error: 'Missão não encontrada.' };
   const mj: any = structuredClone(row.mission_json || {});
@@ -53,11 +60,32 @@ export async function saveRuntimeVisualDefaults(input: unknown) {
   const schema = z.object({ defaultPreset:z.string().min(1).max(80), rendererQuality:z.enum(['low','balanced','high']), mobileQuality:z.enum(['low','balanced','high']) });
   const parsed = schema.safeParse(input);
   if (!parsed.success) return { ok: false, error: 'Configuração inválida.' };
-  const sb = await createClient();
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user) return { ok: false, error: 'Sessão expirada.' };
-  const { data: isAdmin } = await sb.rpc('is_admin');
-  if (!isAdmin) return { ok: false, error: 'Acesso administrativo necessário.' };
+  const auth=await adminClient(); if(!auth.sb)return{ok:false,error:auth.error}; const sb=auth.sb;
   const { error } = await sb.from('game_runtime_settings').update({ default_preset:parsed.data.defaultPreset, renderer_quality:parsed.data.rendererQuality, mobile_quality:parsed.data.mobileQuality, updated_at:new Date().toISOString() }).eq('id',1);
   return error ? { ok:false, error:error.message } : { ok:true };
+}
+
+export async function savePresetArtwork(input:unknown){
+  const parsed=z.object({slug:z.string().min(1).max(80),backgroundUrl:optionalUrl}).safeParse(input);
+  if(!parsed.success)return{ok:false,error:parsed.error.issues[0]?.message||'URL de cenário inválida.'};
+  const auth=await adminClient();if(!auth.sb)return{ok:false,error:auth.error};const sb=auth.sb;
+  const{data:row,error:readError}=await sb.from('game_visual_presets').select('config').eq('slug',parsed.data.slug).maybeSingle();
+  if(readError||!row)return{ok:false,error:'Preset não encontrado.'};
+  const config={...(row.config||{})};
+  if(parsed.data.backgroundUrl)config.background_url=parsed.data.backgroundUrl;else delete config.background_url;
+  const{error}=await sb.from('game_visual_presets').update({config,updated_at:new Date().toISOString()}).eq('slug',parsed.data.slug);
+  return error?{ok:false,error:error.message}:{ok:true};
+}
+
+export async function saveCharacterArtwork(input:unknown){
+  const parsed=z.object({slug:z.string().min(1).max(100),frontUrl:optionalUrl,sideUrl:optionalUrl,backUrl:optionalUrl,portraitUrl:optionalUrl}).safeParse(input);
+  if(!parsed.success)return{ok:false,error:parsed.error.issues[0]?.message||'URL de personagem inválida.'};
+  const auth=await adminClient();if(!auth.sb)return{ok:false,error:auth.error};const sb=auth.sb;
+  const{data:row,error:readError}=await sb.from('game_asset_catalog').select('config').eq('slug',parsed.data.slug).eq('kind','character').maybeSingle();
+  if(readError||!row)return{ok:false,error:'Personagem não encontrado.'};
+  const config={...(row.config||{})};
+  const pairs:[string,string][]=[['front_url',parsed.data.frontUrl],['side_url',parsed.data.sideUrl],['back_url',parsed.data.backUrl],['portrait_url',parsed.data.portraitUrl]];
+  for(const[key,value]of pairs){if(value)config[key]=value;else delete config[key]}
+  const{error}=await sb.from('game_asset_catalog').update({config,updated_at:new Date().toISOString()}).eq('slug',parsed.data.slug);
+  return error?{ok:false,error:error.message}:{ok:true};
 }
