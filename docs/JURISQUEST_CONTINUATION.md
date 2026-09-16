@@ -1,29 +1,51 @@
 # JurisQuest continuation state
 
-Branch: `jurisquest-commercial-20260916`
+Branch: `jurisquest-commercial-20260916`  
+PR: `#1` against `jurisquest-next`  
 Production authority: current Vercel production remains untouched until explicit promotion.
 
 ## Current architecture
 - One gameplay runtime only: `components/game-runtime-pro-v4.tsx`.
-- Campaign and Plantão both use V4.
-- Answer verdicts are server-authoritative.
-- Browser mission payloads are sanitized before render.
-- `missions_client` exists in Supabase and removes answer keys / post-answer feedback.
-- `missions_admin` exists for raw JSON, guarded by `is_admin()`.
-- Direct `missions` SELECT is temporarily retained only for compatibility with the old production deployment.
+- Campaign and Plantão both use V4; do not create or restore a second gameplay runtime.
+- Decision verdicts and feedback are server-authoritative.
+- Campaign uses `submitCampaignDecision`; Plantão uses `submitPlantaoAnswer`.
+- Browser mission payloads are sanitized; initial payloads do not contain answer keys or post-answer feedback.
+- Runtime feedback is cached only after the server returns the verdict; do not reintroduce `choice.correct`-based client logic.
+- `missions_client` exists in Supabase and returns accessible missions with sanitized `mission_json`.
+- `missions_admin` exposes raw mission JSON only when `is_admin()` is true.
+- Student pages have been migrated from `missions` to `missions_client`.
+- Admin raw mission reads use `missions_admin`; administrative writes still target `missions` under admin RLS.
+- Broad authenticated `SELECT` on `missions` is temporarily retained only so the old production deployment keeps working during preview validation. Final revoke happens only with promotion of the migrated app.
 
-## Next required sequence
-1. Finish migrating every student read from `missions` to `missions_client`.
-2. Verify admin raw reads use `missions_admin` and writes still use `missions`.
-3. Run build, student journey E2E, dependency audit, and inspect runtime for regressions.
-4. Deploy a fresh preview of this branch; production remains untouched.
-5. Validate preview manually/authenticated.
-6. At promotion time only: revoke broad authenticated SELECT on `missions` and grant only non-sensitive columns.
-7. Continue visual/commercial work: external/admin-replaceable assets, higher-fidelity scenes/characters, animation polish, mobile QA, monetization gating.
+## Runtime / visual state
+- Visual Studio settings change the real V4 runtime: preset, time, weather, density, particles, fog, vignette and camera zoom.
+- Runtime has movement game-feel polish: walk/idle motion, target pulse, arrival feedback and modal/feedback transitions.
+- Visual Studio previews use real procedural scene and character assets.
+- `components/admin/asset-library.tsx` lets the admin define HTTPS artwork overrides without code changes.
+- Scene presets support `config.background_url`.
+- Character catalog entries support `front_url`, `side_url`, `back_url` and `portrait_url`.
+- V4 preloads these overrides and falls back to procedural SVGs if no external art is configured.
+- External character sprites are scale-normalized so large source images do not explode in size.
+
+## Navigation / product state
+- Dashboard is the game command center.
+- Perfil, Revisão, Casos and Edital use a shared product navigation shell.
+- Plantão landing/report were simplified; active Plantão runs through V4.
+- The old duplicate active Plantão runtime must not be reintroduced.
+
+## Immediate next sequence
+1. Wait for and inspect permanent CI gates on the consolidated branch: build, student journey and dependency audit.
+2. Fix any regression before deployment; do not bypass failing gates.
+3. Deploy a fresh Vercel preview from `jurisquest-commercial-20260916`; production remains untouched.
+4. Validate authenticated flows: login, Dashboard, Campanha, Plantão, Revisão, Perfil, Edital, Arquivo and ADM Visual Studio/asset library.
+5. Test external artwork override with at least one preset and one character, confirming SVG fallback still works.
+6. After preview approval, continue commercial polish: direct asset upload/storage workflow, higher-fidelity scene/character art, mobile interaction QA, performance and monetization gating.
+7. At production promotion only, revoke broad authenticated `SELECT` on `missions` and grant only non-sensitive metadata columns. Keep `missions_client` for students and `missions_admin` for raw admin reads.
 
 ## Product rules
-- Do not create a second game/runtime.
+- Do not rebuild the game from zero unless explicitly requested.
 - Do not regress working features into prototypes.
 - Student UX should feel like a game, not a quiz wrapped in cards.
-- Visual Studio must change the actual runtime.
+- Visual Studio must alter the actual runtime, not store inert configuration.
+- Server decides correctness, XP, review scheduling and rewards.
 - Production must not be changed without explicit approval.
