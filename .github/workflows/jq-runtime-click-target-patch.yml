@@ -1,0 +1,45 @@
+name: JurisQuest Runtime Interaction Patch
+
+on:
+  push:
+    branches: [jurisquest-commercial-20260916]
+
+permissions:
+  contents: write
+
+jobs:
+  patch-runtime:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jurisquest-commercial-20260916
+          fetch-depth: 0
+      - name: Expand NPC and evidence click targets
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('components/game-runtime-pro-v4.tsx')
+          s=p.read_text()
+          if 'jqInteractionHit' in s:
+              print('Runtime interaction patch already present')
+              raise SystemExit(0)
+          old_actor="""    actor(def:any,isPlayer=false){const x=this.mapX(def.position?.x||600),y=this.mapY(def.position?.y||650),style=def.visual?.archetype||def.style||'civilian',facing=(def.visual?.facing||'front') as Facing,img=this.physics.add.image(x,y,isPlayer?`char-player-${facing}`:`char-${style}-${facing}`).setOrigin(.5,.84),scale=Math.max(.4,Math.min(.6,this.worldH/1580));img.setScale(scale);img.body.setSize(74,46);img.body.setCollideWorldBounds(true);img.setDepth(y+20);(img as any).jqLabel=isPlayer?null:this.label(def.name,def.role);(img as any).jqStyle=style;(img as any).jqDefaultFacing=facing;if(!isPlayer){img.setInteractive({useHandCursor:true});img.on('pointerdown',()=>this.startAuto('actor',def.id,img))}return img}"""
+          new_actor="""    actor(def:any,isPlayer=false){const x=this.mapX(def.position?.x||600),y=this.mapY(def.position?.y||650),style=def.visual?.archetype||def.style||'civilian',facing=(def.visual?.facing||'front') as Facing,img=this.physics.add.image(x,y,isPlayer?`char-player-${facing}`:`char-${style}-${facing}`).setOrigin(.5,.84),scale=Math.max(.4,Math.min(.6,this.worldH/1580));img.setScale(scale);img.body.setSize(74,46);img.body.setCollideWorldBounds(true);img.setDepth(y+20);(img as any).jqLabel=isPlayer?null:this.label(def.name,def.role);(img as any).jqStyle=style;(img as any).jqDefaultFacing=facing;if(!isPlayer){img.setInteractive({useHandCursor:true});img.on('pointerdown',()=>this.startAuto('actor',def.id,img));const hit=this.add.zone(x,y-Math.max(18,img.displayHeight*.18),Math.max(118,img.displayWidth*1.55),Math.max(132,img.displayHeight*.92)).setDepth(y+22).setInteractive({useHandCursor:true});(hit as any).jqInteractionHit=true;hit.on('pointerdown',()=>this.startAuto('actor',def.id,img));(img as any).jqHit=hit}return img}"""
+          old_prop="""    prop(def:any){const x=this.mapX(def.position?.x||500),y=this.mapY(def.position?.y||300),key=def.kind==='camera'?'obj-camera':def.kind==='evidence'?'obj-evidence':'obj-document',img=this.add.image(x,y,key).setScale(.5).setDepth(y+6);(img as any).jqLabel=this.label(def.name||'Objeto',def.role||'EVIDÊNCIA');(img as any).jqLabel.setVisible(false);img.setInteractive({useHandCursor:true});img.on('pointerdown',()=>this.startAuto('object',def.id,img));return img}"""
+          new_prop="""    prop(def:any){const x=this.mapX(def.position?.x||500),y=this.mapY(def.position?.y||300),key=def.kind==='camera'?'obj-camera':def.kind==='evidence'?'obj-evidence':'obj-document',img=this.add.image(x,y,key).setScale(.5).setDepth(y+6);(img as any).jqLabel=this.label(def.name||'Objeto',def.role||'EVIDÊNCIA');(img as any).jqLabel.setVisible(false);img.setInteractive({useHandCursor:true});img.on('pointerdown',()=>this.startAuto('object',def.id,img));const hit=this.add.zone(x,y,132,132).setDepth(y+9).setInteractive({useHandCursor:true});(hit as any).jqInteractionHit=true;hit.on('pointerdown',()=>this.startAuto('object',def.id,img));(img as any).jqHit=hit;return img}"""
+          if old_actor not in s or old_prop not in s:
+              raise SystemExit('Expected runtime snippets not found; refusing unsafe patch')
+          s=s.replace(old_actor,new_actor).replace(old_prop,new_prop)
+          p.write_text(s)
+          print('Expanded runtime interaction targets')
+          PY
+      - name: Commit patch
+        run: |
+          if git diff --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add components/game-runtime-pro-v4.tsx
+          git commit -m "fix: enlarge runtime NPC and evidence interaction targets"
+          git push origin HEAD:jurisquest-commercial-20260916
