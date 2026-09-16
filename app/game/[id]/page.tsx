@@ -1,8 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import GameRuntime from '@/components/game-runtime-pro-v3';
+import GameRuntime from '@/components/game-runtime-pro-v4';
 import GameCommercialLayer from '@/components/game-commercial-layer';
-import CampaignClickGuide from '@/components/campaign-click-guide';
 
 export default async function Game({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ mode?: string; stage?: string }> }) {
   const { id } = await params;
@@ -42,6 +41,7 @@ export default async function Game({ params, searchParams }: { params: Promise<{
 
   return <>
     <GameRuntime
+      mode="campaign"
       missionId={missionRow.id}
       mission={mission}
       userId={user.id}
@@ -52,7 +52,6 @@ export default async function Game({ params, searchParams }: { params: Promise<{
       exploreMode={exploreMode}
       exploreStage={exploreMode ? stage || null : null}
     />
-    <CampaignClickGuide mission={mission} disabled={exploreMode}/>
     <GameCommercialLayer/>
   </>;
 }
