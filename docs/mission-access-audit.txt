@@ -1,29 +1,22 @@
-app/profile/page.tsx:23: sb.from('missions').select('syllabus_id').eq('status','published'),
-app/dashboard/page.tsx:15: sb.from('missions').select('id,syllabus_id').eq('status','published'),
-app/plantao/page.tsx:36: const{data:missions}=missionIds.length?await sb.from('missions').select('id,title,mission_json').in('id',missionIds):{data:[] as any[]};
+app/plantao/page.tsx:36: const{data:missions}=missionIds.length?await sb.from('missions_client').select('id,title,mission_json').in('id',missionIds):{data:[] as any[]};
 app/plantao/page.tsx:40: const decision=(mission?.mission_json?.decisions||[]).find((d:any)=>d.id===item.decision_id);
-app/plantao/page.tsx:51: const{data:mission}=await sb.from('missions').select('id,title,summary,mission_json,syllabus_id,environment_theme').eq('id',item.mission_id).eq('status','published').maybeSingle();
+app/plantao/page.tsx:51: const{data:mission}=await sb.from('missions_client').select('id,title,summary,mission_json,syllabus_id,environment_theme').eq('id',item.mission_id).eq('status','published').maybeSingle();
 app/plantao/page.tsx:54: const mj:any=mission.mission_json||{};
-app/archive/page.tsx:12: sb.from('missions').select('id,title,summary,sequence_no,mission_json,syllabus_id').eq('status','published').order('sequence_no')
+app/archive/page.tsx:12: sb.from('missions_client').select('id,title,summary,sequence_no,mission_json,syllabus_id').eq('status','published').order('sequence_no')
 app/archive/page.tsx:24: <section className="dossierGrid">{completed.map((m:any)=>{const p:any=done.get(m.id);const stages=[...(m.mission_json?.stages||[])].sort((a:any,b:any)=>(a.order||0)-(b.order||0));return <article className="dossier" key={m.id}><div className="dossierIndex">{String(m.sequence_no||'').padStart(2,'0')}</div><div className="dossierStatus">CASO CONCLUÍDO</div><h2>{m.title}</h2><p>{m.summary}</p><div className="dossierScores"><span><small>1ª TENTATIVA</small><b>{p?.score_first_try!=null?`${Number(p.score_first_try)}%`:'—'}</b></span><span><small>MELHOR RESULTADO</small><b>{p?.score_best!=null?`${Number(p.score_best)}%`:'—'}</b></span><span><small>CENAS</small><b>{stages.length}</b></span></div><div className="sceneList">{stages.map((s:any,i:number)=><a key={s.id} href={`/game/${m.id}?mode=explore&stage=${encodeURIComponent(s.id)}`}><span>{String(i+1).padStart(2,'0')}</span><div><b>{s.title||`Cena ${i+1}`}</b><small>{s.location||'Cenário investigativo'}</small></div><i>Explorar →</i></a>)}</div><div className="dossierActions"><a className="primary" href={`/game/${m.id}?mode=explore`}>Explorar missão</a><a href={`/game/${m.id}?mode=replay`}>Refazer caso</a></div></article>})}</section>
-app/admin/page.tsx:13: sb.from('missions').select('*',{count:'exact',head:true}).eq('status','published'),
-app/review/page.tsx:16: const{data:missions}=ids.length?await sb.from('missions').select('id,title,summary').in('id',ids):{data:[] as any[]};
-app/syllabus/[id]/page.tsx:11: sb.from('missions').select('id,title,summary,sequence_no').eq('syllabus_id',id).eq('status','published').order('sequence_no'),
-app/admin/syllabi/page.tsx:10: sb.from('missions').select('id,title,syllabus_id,status'),
-app/admin/missions/page.tsx:12: sb.from('missions').select('id,syllabus_id,title,summary,status,difficulty,estimated_minutes,sequence_no,mission_json,updated_at').order('sequence_no'),
+app/admin/missions/page.tsx:12: sb.from('missions_admin').select('id,syllabus_id,title,summary,status,difficulty,estimated_minutes,sequence_no,mission_json,updated_at').order('sequence_no'),
 app/admin/missions/actions.ts:17: mission_json:z.string().min(2).max(250000),
 app/admin/missions/actions.ts:78: let mj:any;try{mj=JSON.parse(parsed.data.mission_json)}catch{return{ok:false,error:'O mission_json não é um JSON válido.'}}
 app/admin/missions/actions.ts:88: const{data:current}=await sb.from('missions').select('id,status,published_at').eq('id',parsed.data.id).maybeSingle();
 app/admin/missions/actions.ts:97: const payload:any={title:parsed.data.title,summary:parsed.data.summary,status:parsed.data.status,difficulty:parsed.data.difficulty,estimated_minutes:parsed.data.estimated_minutes,sequence_no:parsed.data.sequence_no,syllabus_id:parsed.data.syllabus_id,mission_json:mj,schema_version:mj.schema,updated_at:new Date().toISOString(),published_at:publishedAt};
 app/admin/missions/actions.ts:98: const {error}=await sb.from('missions').update(payload).eq('id',parsed.data.id);
-app/admin/visual/page.tsx:15: sb.from('missions').select('id,title,status,mission_json').in('status', ['draft','published']).order('created_at', { ascending: false }),
-app/admin/visual/actions.ts:35: const { data: row, error: readError } = await sb.from('missions').select('mission_json').eq('id', parsed.data.missionId).maybeSingle();
+app/admin/visual/page.tsx:15: sb.from('missions_admin').select('id,title,status,mission_json').in('status', ['draft','published']).order('created_at', { ascending: false }),
+app/admin/visual/actions.ts:35: const { data: row, error: readError } = await sb.from('missions_admin').select('mission_json').eq('id', parsed.data.missionId).maybeSingle();
 app/admin/visual/actions.ts:37: const mj: any = structuredClone(row.mission_json || {});
 app/admin/visual/actions.ts:48: const { error } = await sb.from('missions').update({ mission_json: mj, updated_at: new Date().toISOString() }).eq('id', parsed.data.missionId);
-app/game/[id]/page.tsx:15: .from('missions')
 app/game/[id]/page.tsx:16: .select('id,title,summary,mission_json,syllabus_id')
 app/game/[id]/page.tsx:22: const mission: any = missionRow.mission_json;
-app/review/[id]/page.tsx:17: sb.from('missions').select('id,title,mission_json').eq('id',review.mission_id).eq('status','published').maybeSingle(),
+app/review/[id]/page.tsx:17: sb.from('missions_client').select('id,title,mission_json').eq('id',review.mission_id).eq('status','published').maybeSingle(),
 components/review-session.tsx:6: type Props={review:{id:string;interval_days:number;reason?:string|null};mission:{id:string;title:string;mission_json:any};progress?:any;userId:string};
 components/review-session.tsx:12: const questions=useMemo(()=>{const all=[...(mission.mission_json?.decisions||[])];all.sort((a:any,b:any)=>Number(weak.has(b.id))-Number(weak.has(a.id)));return all.slice(0,5)},[mission.mission_json]);
 components/admin/visual-studio.tsx:15: const mission=missionRow?.mission_json||{};
