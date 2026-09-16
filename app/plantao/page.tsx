@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import PatrolMode from '@/components/patrol-mode';
+import PatrolMode from '@/components/patrol-mode-v2';
 
 type Search={run?:string;error?:string};
 
@@ -17,7 +17,7 @@ export default async function PlantaoPage({searchParams}:{searchParams:Promise<S
     sb.from('patrol_runs').select('id,item_count,answered_count,correct_count,xp_earned,summary,started_at,completed_at,status').eq('user_id',user.id).eq('status','completed').order('started_at',{ascending:false}).limit(3),
   ]);
 
-  let runId=query.run||'';
+  const runId=query.run||'';
   if(!runId){
     const{data:active}=await sb.from('patrol_runs').select('id').eq('user_id',user.id).eq('status','active').order('started_at',{ascending:false}).limit(1).maybeSingle();
     if(active?.id)redirect(`/plantao?run=${active.id}`);
@@ -55,19 +55,42 @@ export default async function PlantaoPage({searchParams}:{searchParams:Promise<S
   const stages:any[]=[...(mj.stages||[])].sort((a:any,b:any)=>(a.order||0)-(b.order||0));
   const stage=stages.find((s:any)=>s.id===decision.stage)||stages.find((s:any)=>(s.objectives||[]).some((o:any)=>o.type==='decision'&&o.target===decision.id))||stages[0]||{};
   const required=new Set<string>(decision.requires_facts||[]);
-  const evidence:any[]=[];
-  for(const s of stages){
-    for(const actor of s.actors||[]){
-      const fact=actor.fact;
-      if(fact?.id&&required.has(fact.id))evidence.push({id:`actor:${actor.id}`,label:fact.title||actor.name||'Depoimento',detail:fact.text||actor.goal||'',kind:'actor'});
-    }
-    for(const object of s.objects||[]){
-      const fact=object.fact;
-      if(fact?.id&&required.has(fact.id))evidence.push({id:`object:${object.id}`,label:fact.title||object.name||'Evidência',detail:fact.text||object.interaction_text||'',kind:'object'});
-    }
+  const entities:any[]=[];
+
+  for(const actor of stage.actors||[]){
+    const fact=actor.fact||{};
+    entities.push({
+      id:`actor:${actor.id}`,
+      sourceId:actor.id,
+      kind:'actor',
+      name:actor.name||fact.title||'Pessoa',
+      role:actor.role||'PESSOA',
+      style:actor.visual?.archetype||actor.style||'civilian',
+      factTitle:fact.title||actor.name||'Depoimento',
+      factText:fact.text||actor.goal||'',
+      interactionText:actor.goal||'Conversar',
+      required:!!fact.id&&required.has(fact.id),
+      position:actor.position||{x:600,y:380},
+    });
   }
 
-  const[{data:character},{data:syllabus}]=await Promise.all([
+  for(const object of stage.objects||[]){
+    const fact=object.fact||{};
+    entities.push({
+      id:`object:${object.id}`,
+      sourceId:object.id,
+      kind:'object',
+      name:object.name||fact.title||'Evidência',
+      role:object.role||'EVIDÊNCIA',
+      factTitle:fact.title||object.name||'Evidência',
+      factText:fact.text||object.interaction_text||'',
+      interactionText:object.interaction_text||'Examinar',
+      required:!!fact.id&&required.has(fact.id),
+      position:object.position||{x:650,y:440},
+    });
+  }
+
+  const [{data:character},{data:syllabus}]=await Promise.all([
     mission.syllabus_id?sb.from('student_characters').select('character_name,role_title,archetype').eq('user_id',user.id).eq('syllabus_id',mission.syllabus_id).maybeSingle():Promise.resolve({data:null}),
     mission.syllabus_id?sb.from('exam_syllabi').select('position_name').eq('id',mission.syllabus_id).maybeSingle():Promise.resolve({data:null}),
   ]);
@@ -85,8 +108,9 @@ export default async function PlantaoPage({searchParams}:{searchParams:Promise<S
     choices:(decision.choices||[]).map((c:any)=>String(c.text||'')),
     location:stage.location||'Ocorrência em andamento',
     sceneTitle:stage.title||mission.title,
-    environment:stage.environment||stage.visual?.preset||mission.environment_theme||'default',
-    evidence:evidence.slice(0,8),
+    environment:stage.environment||mission.environment_theme||'parking_night',
+    entities,
+    playerSpawn:stage.player_spawn||{x:600,y:650},
     character:{
       name:character?.character_name||user.user_metadata?.display_name||user.email?.split('@')[0]||'Jogador',
       role:character?.role_title||syllabus?.position_name||'Candidato',
