@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { ProductHeader, ProductMobileNav } from '@/components/product-navigation';
 
 export default async function ReviewPage(){
   const sb=await createClient();
@@ -18,7 +19,7 @@ export default async function ReviewPage(){
   const firstMission:any=first?mm.get(first.mission_id):null;
 
   return <main className="memoryRoom">
-    <header className="memoryTop"><a href="/dashboard" className="memoryBrand">JURIS<span>QUEST</span></a><nav><a href="/dashboard">Central</a><a href="/plantao">Plantão</a><a href="/archive">Casos</a><a className="active" href="/review">Revisão</a></nav><div className="memoryStatus"><i/> SISTEMA DE MEMÓRIA ATIVO</div></header>
+    <ProductHeader active="review"/>
 
     <div className="memoryBody">
       <section className="memoryCore">
@@ -39,6 +40,7 @@ export default async function ReviewPage(){
 
       <section className="memorySchedule"><header><div><small>AGENDA DE MEMÓRIA</small><h2>Próximos retornos</h2></div><a href="/dashboard">Voltar à Central</a></header><div className="scheduleLine">{(upcoming||[]).map((r:any,i:number)=>{const m:any=mm.get(r.mission_id);const d=new Date(r.due_at);return <div className="schedulePoint" key={r.id}><span>{d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})}</span><i/><div><b>{m?.title||'Missão'}</b><small>{r.interval_days} dias</small></div></div>})}{(!upcoming||!upcoming.length)&&<p>Nenhuma recuperação futura agendada.</p>}</div></section>
     </div>
+    <ProductMobileNav active="review"/>
     <style>{CSS}</style>
   </main>;
 }

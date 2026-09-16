@@ -64,3 +64,13 @@ img{max-width:100%}
 @media(max-width:820px){.adminHero{display:block}.adminHeroActions{margin-top:16px}.adminMetrics{grid-template-columns:repeat(2,1fr)}.adminModules{grid-template-columns:1fr}.adminShell{padding:16px 10px 60px}.adminHero{padding:20px}.adminHero h1{font-size:28px}}
 @media(max-width:760px){.grid{grid-template-columns:1fr}.shell{padding:18px 10px}.center{margin:28px auto}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+
+/* JQ_PRODUCT_NAV_V1 */
+.jqProductTop{height:68px;position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:22px;padding:0 clamp(14px,3vw,42px);border-bottom:1px solid var(--jq-line);background:#051116f2;backdrop-filter:blur(20px);box-shadow:0 10px 35px #0004}
+.jqProductBrand{font-size:18px;font-weight:950;letter-spacing:2.1px;white-space:nowrap}.jqProductBrand span{color:var(--jq-gold)}
+.jqProductTop nav{display:flex;gap:3px}.jqProductTop nav a{padding:9px 11px;border-radius:9px;color:#758c91;font-size:10px;font-weight:850;transition:.16s}.jqProductTop nav a:hover,.jqProductTop nav a.active{color:#f1f6f4;background:#0d2228}.jqProductTop nav a.active{box-shadow:inset 0 -2px 0 var(--jq-gold)}
+.jqProductState{margin-left:auto;display:flex;align-items:center;gap:7px;color:#6f858b;font:800 8px var(--jq-mono);letter-spacing:.08em;white-space:nowrap}.jqProductState i{width:6px;height:6px;border-radius:50%;background:var(--jq-green);box-shadow:0 0 12px var(--jq-green)}
+.jqProductBack{padding:8px 10px;border:1px solid #2d4b54;border-radius:9px;color:#9bb0b4;font-size:9px;font-weight:850;white-space:nowrap}.jqProductBack:hover{border-color:#55747d;color:#eef5f4;background:#0a2026}
+.jqProductMobileNav{display:none}
+@media(max-width:900px){.jqProductTop nav{display:none}.jqProductState{display:none}.jqProductTop{height:60px;padding:0 12px}.jqProductBack{margin-left:auto}.jqProductMobileNav{position:fixed;z-index:80;display:grid;grid-template-columns:repeat(5,1fr);left:8px;right:8px;bottom:max(8px,env(safe-area-inset-bottom));border:1px solid #2d4b54;border-radius:14px;background:#061217f2;backdrop-filter:blur(18px);box-shadow:0 16px 50px #000a;overflow:hidden}.jqProductMobileNav a{text-align:center;padding:11px 3px;color:#71888e;font-size:8px;font-weight:850}.jqProductMobileNav a.active{color:#f0ce71;background:#102027}}

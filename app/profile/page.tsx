@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { chibiSvg } from '@/lib/game/character-assets-v2';
 import { svgUri } from '@/lib/game/studio-assets';
 import { saveCharacter } from './actions';
+import { ProductHeader, ProductMobileNav } from '@/components/product-navigation';
 
 type Search={saved?:string;error?:string};
 const ARCHETYPES=[
@@ -34,7 +35,7 @@ export default async function ProfilePage({searchParams}:{searchParams:Promise<S
   const role=current?.role_title||active.position_name||'Candidato';
 
   return <main className="profileRoot">
-    <header className="profileTop"><a href="/dashboard" className="profileBrand">JURIS<span>QUEST</span></a><nav><a href="/dashboard">Início</a><a href="/plantao">Plantão</a><a href="/archive">Casos</a><a href="/review">Revisão</a></nav><a className="profileBack" href="/dashboard">← Painel</a></header>
+    <ProductHeader active="profile" syllabusId={active.id}/>
     <section className="profileWrap">
       <section className="profileHero">
         <div className="profilePortrait"><div className="portraitGlow"/><img src={svgUri(chibiSvg(archetype,'player'))} alt=""/></div>
@@ -57,7 +58,7 @@ export default async function ProfilePage({searchParams}:{searchParams:Promise<S
         <div className="profileActions"><button type="submit">Salvar personagem</button><a href="/dashboard">Cancelar</a></div>
       </form>
     </section>
-    <nav className="profileMobileNav"><a href="/dashboard">Início</a><a href="/plantao">Plantão</a><a href="/archive">Casos</a><a href="/review">Revisão</a><a className="active" href="/profile">Perfil</a></nav>
+    <ProductMobileNav active="profile" syllabusId={active.id}/>
     <style>{CSS}</style>
   </main>;
 }

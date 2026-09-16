@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { ProductHeader, ProductMobileNav } from '@/components/product-navigation';
 
 export default async function SyllabusPage({params}:{params:Promise<{id:string}>}){
   const{id}=await params;const sb=await createClient();const{data:{user}}=await sb.auth.getUser();if(!user)redirect('/');
@@ -15,13 +16,14 @@ export default async function SyllabusPage({params}:{params:Promise<{id:string}>
   const overall=weightedTotal?Math.round(weightedDone/weightedTotal*100):0;const disciplines=[...new Set(rows.map((r:any)=>r.discipline))];const weak=rows.filter((r:any)=>r.totalCount>0&&r.ratio<1).sort((a:any,b:any)=>a.ratio-b.ratio).slice(0,4);const mastered=rows.filter((r:any)=>r.ratio>=1).length;
 
   return <main className="territory">
-    <header className="territoryTop"><a href="/dashboard" className="territoryBrand">JURIS<span>QUEST</span></a><nav><a href="/dashboard">Central</a><a href="/plantao">Plantão</a><a href="/archive">Casos</a><a href="/review">Revisão</a><a className="active" href={`/syllabus/${id}`}>Edital</a></nav><a className="back" href="/dashboard">← Central</a></header>
+    <ProductHeader active="syllabus" syllabusId={id}/>
 
     <section className="territoryHero"><div className="radar"><div className="radarGrid"/><div className="radarSweep"/><strong>{overall}%</strong><span>COBERTURA</span></div><div className="heroCopy"><small>MAPA DE DOMÍNIO</small><h1>{syllabus.title}</h1><p>{[syllabus.agency,syllabus.position_name,syllabus.exam_name,syllabus.exam_year].filter(Boolean).join(' • ')}</p><div className="heroProgress"><i style={{width:`${overall}%`}}/></div><div className="heroStats"><span><b>{mastered}</b> tópicos dominados</span><span><b>{rows.length-mastered}</b> ainda em construção</span><span><b>{missions?.length||0}</b> casos vinculados</span></div></div></section>
 
     {weak.length>0&&<section className="weakSector"><header><div><small>PRIORIDADE DE ESTUDO</small><h2>Setores com menor cobertura</h2></div><a href="/plantao">Treinar no Plantão →</a></header><div>{weak.map((r:any,i:number)=><article key={r.id}><span>{String(i+1).padStart(2,'0')}</span><div><small>{r.code}</small><b>{r.title}</b><i><em style={{width:`${Math.round(r.ratio*100)}%`}}/></i></div><strong>{Math.round(r.ratio*100)}%</strong></article>)}</div></section>}
 
     <section className="disciplineMap">{disciplines.map((discipline:any,di:number)=>{const dr=rows.filter((r:any)=>r.discipline===discipline);const dPct=dr.length?Math.round(dr.reduce((a:number,r:any)=>a+r.ratio,0)/dr.length*100):0;return <article className="disciplineZone" key={discipline}><header><span>{String(di+1).padStart(2,'0')}</span><div><small>DISCIPLINA</small><h2>{discipline}</h2></div><div className="disciplinePct"><b>{dPct}%</b><small>cobertura</small></div></header><div className="topicGrid">{dr.map((r:any)=>{const pct=Math.round(r.ratio*100);const status=pct===100?'mastered':pct>0?'active':'locked';return <section className={`topicNode ${status}`} key={r.id}><div className="nodeRadar"><span>{pct}%</span><i style={{'--p':`${pct*3.6}deg`} as any}/></div><div className="topicCopy"><small>{r.code}</small><h3>{r.title}</h3>{r.source_ref&&<p>{r.source_ref}</p>}<span>{r.doneCount}/{r.totalCount} casos concluídos • peso {Number(r.weight).toFixed(1)}</span></div><div className="topicMissions">{r.linked.map((l:any)=>{const m:any=missionMap.get(l.mission_id),p:any=progressMap.get(l.mission_id);return <a key={l.mission_id} href={p?.status==='completed'?`/game/${m.id}?mode=explore`:`/game/${m.id}`}><span>{p?.status==='completed'?'✓':p?.progress_percent>0?'↻':'→'}</span><b>{m.title}</b>{l.is_primary&&<em>PRINCIPAL</em>}</a>})}{!r.linked.length&&<span className="noCase">Nenhum caso vinculado ainda.</span>}</div></section>})}</div></article>})}</section>
+    <ProductMobileNav active="syllabus" syllabusId={id}/>
     <style>{CSS}</style>
   </main>;
 }

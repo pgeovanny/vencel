@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { ProductHeader, ProductMobileNav } from '@/components/product-navigation';
 
 export default async function ArchivePage(){
   const sb=await createClient();
@@ -14,7 +15,7 @@ export default async function ArchivePage(){
   const completed=(missions||[]).filter((m:any)=>done.has(m.id));
 
   return <main className="caseArchive">
-    <header className="archiveTop"><a href="/dashboard" className="archiveBrand">JURIS<span>QUEST</span></a><nav><a href="/dashboard">Início</a><a href="/plantao">Plantão</a><a className="active" href="/archive">Casos</a><a href="/review">Revisão</a></nav><a className="archiveBack" href="/dashboard">← Painel</a></header>
+    <ProductHeader active="cases"/>
     <section className="archiveContent">
       <section className="archiveHero"><div><div className="archiveEy">ARQUIVO OPERACIONAL</div><h1>Casos concluídos</h1><p>Revisite cenas, depoimentos e evidências sem alterar o resultado original. Use o arquivo como memória visual do que você já enfrentou.</p></div><div className="archiveCount"><small>CASOS ARQUIVADOS</small><strong>{completed.length}</strong><span>disponíveis para exploração</span></div></section>
 
@@ -22,6 +23,7 @@ export default async function ArchivePage(){
 
       <section className="dossierGrid">{completed.map((m:any)=>{const p:any=done.get(m.id);const stages=[...(m.mission_json?.stages||[])].sort((a:any,b:any)=>(a.order||0)-(b.order||0));return <article className="dossier" key={m.id}><div className="dossierIndex">{String(m.sequence_no||'').padStart(2,'0')}</div><div className="dossierStatus">CASO CONCLUÍDO</div><h2>{m.title}</h2><p>{m.summary}</p><div className="dossierScores"><span><small>1ª TENTATIVA</small><b>{p?.score_first_try!=null?`${Number(p.score_first_try)}%`:'—'}</b></span><span><small>MELHOR RESULTADO</small><b>{p?.score_best!=null?`${Number(p.score_best)}%`:'—'}</b></span><span><small>CENAS</small><b>{stages.length}</b></span></div><div className="sceneList">{stages.map((s:any,i:number)=><a key={s.id} href={`/game/${m.id}?mode=explore&stage=${encodeURIComponent(s.id)}`}><span>{String(i+1).padStart(2,'0')}</span><div><b>{s.title||`Cena ${i+1}`}</b><small>{s.location||'Cenário investigativo'}</small></div><i>Explorar →</i></a>)}</div><div className="dossierActions"><a className="primary" href={`/game/${m.id}?mode=explore`}>Explorar missão</a><a href={`/game/${m.id}?mode=replay`}>Refazer caso</a></div></article>})}</section>
     </section>
+    <ProductMobileNav active="cases"/>
     <style>{CSS}</style>
   </main>;
 }
