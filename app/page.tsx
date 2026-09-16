@@ -11,17 +11,17 @@ export default async function Login({searchParams}:{searchParams:Promise<{error?
       <div className="scanLine"/>
     </section>
 
-    <header className="entryHeader"><div className="entryBrand">JURIS<span>QUEST</span></div><div className="entryStatus"><i/> SISTEMA ONLINE</div></header>
+    <header className="entryHeader"><div className="entryBrand">JURIS<span>QUEST</span></div><div className="entryStatus"><i/> TREINO PERSONALIZADO</div></header>
 
     <section className="entryBrief">
       <div className="entryEy">SIMULAÇÃO PROFISSIONAL PARA CONCURSOS</div>
       <h1>Entre no caso.<br/><span>Aprenda decidindo.</span></h1>
       <p>Seu edital vira ocorrências, investigações e decisões. Cada erro volta no momento certo até deixar de ser ponto fraco.</p>
-      <div className="entryModes"><div><b>01</b><span>PLANTÃO</span><small>sessões adaptativas</small></div><div><b>02</b><span>CASOS</span><small>campanha narrativa</small></div><div><b>03</b><span>REVISÃO</span><small>recuperação ativa</small></div></div>
+      <div className="entryModes"><div><b>01</b><span>PLANTÃO</span><small>treino curto e personalizado</small></div><div><b>02</b><span>CASOS</span><small>situações completas</small></div><div><b>03</b><span>REVISÃO</span><small>erros no momento certo</small></div></div>
     </section>
 
     <section className="accessRail">
-      <div className="accessHead"><span>IDENTIFICAÇÃO</span><b>ACESSO DO OPERADOR</b><p>Retome seu personagem, seus casos e sua memória de estudo.</p></div>
+      <div className="accessHead"><span>SUA CONTA</span><b>CONTINUE SUA JORNADA</b><p>Retome seu personagem, seus casos e sua memória de estudo.</p></div>
       {p.error&&<div className="accessError">{p.error}</div>}
       <form action={login}>
         <label><span>E-mail</span><input name="email" type="email" required autoComplete="email" placeholder="seu@email.com"/></label>

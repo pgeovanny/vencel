@@ -53,7 +53,7 @@ export default async function ProfilePage({searchParams}:{searchParams:Promise<S
           <div className="avatarStage"><img src={svgUri(chibiSvg(a.id,'player'))} alt=""/></div>
           <div className="archCopy"><strong>{a.label}</strong><p>{a.desc}</p></div><span className="check">✓</span>
         </label>)}</div>
-        {query.saved&&<div className="profileNotice ok">Personagem atualizado. Dashboard, Plantão e Campanha usarão esta identidade.</div>}
+        {query.saved&&<div className="profileNotice ok">Personagem atualizado. Sua identidade já está ativa no JurisQuest.</div>}
         {query.error&&<div className="profileNotice bad">Não foi possível salvar. Confira o nome e tente novamente.</div>}
         <div className="profileActions"><button type="submit">Salvar personagem</button><a href="/dashboard">Cancelar</a></div>
       </form>

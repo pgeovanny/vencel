@@ -47,13 +47,16 @@ export default async function Dashboard(){
   const levelPct=Math.min(100,Math.round((xp%250)/250*100));
   const nextCampaignHref=nextMission?`/game/${nextMission.mission_id}`:'/archive';
   const patrolHref=activePatrol?.id?`/plantao?run=${activePatrol.id}`:'/plantao';
+  const streak=Number(stats?.current_streak||0);
+  const dailyHeadline=dueCount?'Sua revisão chegou ao ponto certo.':activePatrol?'Seu turno está esperando por você.':inProgress?'Continue de onde parou.':errorCount?'Há pontos que vale reforçar hoje.':streak>0?`Mantenha sua sequência de ${streak} dia${streak===1?'':'s'}.`:nextMission?'Seu próximo caso está pronto.':'Escolha como avançar hoje.';
+  const dailyReason=dueCount?`${dueCount} revisão${dueCount===1?'':'ões'} pronta${dueCount===1?'':'s'} para recuperar agora.`:activePatrol?`${activePatrol.answered_count}/${activePatrol.item_count} ocorrências concluídas. Retome sem perder o contexto.`:inProgress?`O caso ${inProgress.title} continua aberto no ponto em que você deixou.`:errorCount?`O Plantão pode priorizar ${errorCount} ponto${errorCount===1?'':'s'} que ainda merece${errorCount===1?'':'m'} atenção.`:streak>0?'Uma sessão curta hoje mantém o ritmo e reforça o que você já estudou.':nextMission?`${nextMission.title} é a próxima situação da sua jornada.`:'Plantão, casos e revisão trabalham sobre o mesmo progresso.';
 
   return <main className="opsRoot">
     <div className="opsBackdrop" aria-hidden="true"><i/><i/><i/><i/></div>
     <header className="opsTop">
       <a className="opsBrand" href="/dashboard">JURIS<span>QUEST</span></a>
       <nav><a className="active" href="/dashboard">Central</a><a href="/plantao">Plantão</a><a href="/archive">Casos</a><a href="/review">Revisão</a>{primarySyllabus&&<a href={`/syllabus/${primarySyllabus.id}`}>Edital</a>}</nav>
-      <div className="opsTopStatus"><span className="onlineDot"/>RUNTIME V4</div>
+      <div className="opsTopStatus"><span className="onlineDot"/>{streak?`${streak} DIA${streak===1?'':'S'} DE SEQUÊNCIA`:'PROGRESSO SALVO'}</div>
       <a className="opsAvatar" href="/profile"><img src={avatar} alt=""/><span><b>{displayName}</b><small>{role}</small></span></a>
       <form action={logout}><button className="opsExit">Sair</button></form>
     </header>
@@ -61,8 +64,8 @@ export default async function Dashboard(){
     <section className="opsViewport">
       <div className="opsIntro">
         <span className="opsEy">CENTRAL DE OPERAÇÕES</span>
-        <h1>Qual é a próxima missão?</h1>
-        <p>O mesmo motor de jogo. Dois ritmos de estudo.</p>
+        <h1>{dailyHeadline}</h1>
+        <p>{dailyReason}</p>
       </div>
 
       <div className="modeDeck">
@@ -70,10 +73,10 @@ export default async function Dashboard(){
           <div className="gateScene" aria-hidden="true"><div className="radar"><i/><i/><i/></div><div className="street"><i/><i/><i/></div><div className="signal"><b>01</b><span>CHAMADO ATIVO</span></div></div>
           <div className="gateShade"/>
           <div className="gateContent">
-            <div className="gateMeta"><span>PLANTÃO</span><b>{activePatrol?'EM ANDAMENTO':'ADAPTATIVO'}</b></div>
+            <div className="gateMeta"><span>PLANTÃO</span><b>{activePatrol?'EM ANDAMENTO':'FEITO PARA VOCÊ'}</b></div>
             <h2>{activePatrol?'Retomar o turno':'Assumir o Plantão'}</h2>
             <p>{dueCount?`${dueCount} revisão${dueCount>1?'ões':''} vencida${dueCount>1?'s':''} será${dueCount>1?'ão':''} priorizada${dueCount>1?'s':''}.`:errorCount?`${errorCount} ponto${errorCount>1?'s':''} fraco${errorCount>1?'s':''} pode${errorCount>1?'m':''} voltar em novas ocorrências.`:'Ocorrências curtas escolhidas pelo seu histórico e pelo edital.'}</p>
-            <div className="gateFoot"><span>{activePatrol?`${activePatrol.answered_count}/${activePatrol.item_count} ocorrências`:'3–8 min • revisão • lacunas'}</span><strong>ENTRAR <i>→</i></strong></div>
+            <div className="gateFoot"><span>{activePatrol?`${activePatrol.answered_count}/${activePatrol.item_count} ocorrências`:'3–8 min • foco no que mais importa'}</span><strong>ENTRAR <i>→</i></strong></div>
           </div>
         </a>
 
@@ -92,7 +95,7 @@ export default async function Dashboard(){
       <section className="opsConsole">
         <div className="playerDock">
           <div className="playerPortrait"><div className="portraitHalo"/><img src={avatar} alt=""/><i/></div>
-          <div className="playerData"><span className="opsEy">OPERADOR</span><h3>{displayName}</h3><p>{role}</p><div className="rank"><span>NÍVEL {level}</span><b>{xp} XP</b></div><div className="rankBar"><i style={{width:`${levelPct}%`}}/></div></div>
+          <div className="playerData"><span className="opsEy">SEU PERSONAGEM</span><h3>{displayName}</h3><p>{role}</p><div className="rank"><span>NÍVEL {level}</span><b>{xp} XP</b></div><div className="rankBar"><i style={{width:`${levelPct}%`}}/></div></div>
           <a href="/profile">PERSONAGEM →</a>
         </div>
 

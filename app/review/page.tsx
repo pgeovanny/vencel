@@ -25,13 +25,13 @@ export default async function ReviewPage(){
       <section className="memoryCore">
         <div className="coreHalo"><i/><i/><i/></div>
         <div className="coreReadout"><small>RECUPERAÇÕES DISPONÍVEIS</small><strong>{due?.length||0}</strong><span>{due?.length?'conteúdos chegaram ao ponto ideal de recuperação':'nenhuma revisão vencida agora'}</span></div>
-        {first?<a href={`/review/${first.id}`} className="coreAction"><span>INICIAR RECUPERAÇÃO</span><b>{firstMission?.title||'Revisão prioritária'}</b><small>{first.reason||`Revisão ${first.interval_days}d`}</small><em>ENTRAR →</em></a>:<a href="/plantao" className="coreAction quiet"><span>MEMÓRIA ESTÁVEL</span><b>Continue treinando</b><small>O Plantão pode introduzir novos conteúdos e pontos fracos.</small><em>IR PARA O PLANTÃO →</em></a>}
+        {first?<a href={`/review/${first.id}`} className="coreAction"><span>INICIAR RECUPERAÇÃO</span><b>{firstMission?.title||'Revisão prioritária'}</b><small>{first.reason||`Revisão ${first.interval_days}d`}</small><em>ENTRAR →</em></a>:<a href="/plantao" className="coreAction quiet"><span>MEMÓRIA ESTÁVEL</span><b>Continue treinando</b><small>Novas decisões alimentam sua revisão automaticamente.</small><em>IR PARA O PLANTÃO →</em></a>}
       </section>
 
       <aside className="memoryStats"><section><small>XP TOTAL</small><strong>{stats?.xp||0}</strong><span>progressão acumulada</span></section><section><small>SEQUÊNCIA</small><strong>{stats?.current_streak||0}</strong><span>dias de atividade</span></section><section><small>RECUPERAÇÕES</small><strong>{stats?.reviews_completed||0}</strong><span>concluídas</span></section><section className={due?.length?'warn':''}><small>VENCIDAS</small><strong>{due?.length||0}</strong><span>{due?.length?'prioridade máxima':'fila sob controle'}</span></section></aside>
 
       <section className="reviewQueue">
-        <header><div><small>FILA DE RECUPERAÇÃO</small><h1>O que precisa voltar à memória</h1><p>O sistema prioriza o que chegou ao vencimento. Cada decisão precisa ser recuperada corretamente antes de a revisão ser encerrada.</p></div><span>{due?.length||0} AGORA</span></header>
+        <header><div><small>REVISÃO DE HOJE</small><h1>O que precisa voltar à memória</h1><p>As revisões aparecem no momento certo. Acerte novamente para consolidar o ponto antes de seguir.</p></div><span>{due?.length||0} AGORA</span></header>
         <div className="queueTrack">
           {(due||[]).map((r:any,i:number)=>{const m:any=mm.get(r.mission_id);return <a key={r.id} href={`/review/${r.id}`} className={`queueNode ${i===0?'priority':''}`}><div className="nodeNo">{String(i+1).padStart(2,'0')}</div><div className="nodeCopy"><small>{i===0?'PRIORIDADE ATUAL':`REVISÃO ${r.interval_days}D`}</small><b>{m?.title||'Missão'}</b><p>{r.reason||'Recuperação programada'}</p></div><div className="nodePulse"/><em>REVISAR →</em></a>})}
           {(!due||!due.length)&&<div className="emptyQueue"><div className="emptySignal">✓</div><div><b>Nenhuma revisão vencida</b><p>As próximas recuperações aparecerão aqui no momento certo.</p></div></div>}

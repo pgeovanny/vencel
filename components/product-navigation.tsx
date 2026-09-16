@@ -20,7 +20,7 @@ export function ProductHeader({active,syllabusId,rightHref='/dashboard',rightLab
       {syllabusId&&item(active,'syllabus',`/syllabus/${syllabusId}`,'Edital')}
       {item(active,'profile','/profile','Perfil')}
     </nav>
-    <div className="jqProductState"><i/> JURISQUEST ONLINE</div>
+    <div className="jqProductState"><i/> PROGRESSO SALVO</div>
     <a className="jqProductBack" href={rightHref}>{rightLabel}</a>
   </header>;
 }
