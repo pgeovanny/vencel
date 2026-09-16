@@ -23,13 +23,14 @@ export default async function Game({ params, searchParams }: { params: Promise<{
   if (!mission || mission.schema !== 'jurisquest.mission.v2') notFound();
   const clientMission=missionForClient(mission);
 
-  const [{ data: character }, { data: progress }, { data: runtimeSettings }, { data: visualPresets }] = await Promise.all([
+  const [{ data: character }, { data: progress }, { data: runtimeSettings }, { data: visualPresets }, { data: visualAssets }] = await Promise.all([
     missionRow.syllabus_id
       ? sb.from('student_characters').select('*').eq('user_id', user.id).eq('syllabus_id', missionRow.syllabus_id).maybeSingle()
       : Promise.resolve({ data: null }),
     sb.from('mission_progress').select('*').eq('user_id', user.id).eq('mission_id', id).maybeSingle(),
     sb.from('game_runtime_settings').select('*').eq('id', 1).maybeSingle(),
     sb.from('game_visual_presets').select('slug,name,config').eq('active',true).order('sort_order'),
+    sb.from('game_asset_catalog').select('slug,kind,config').eq('active',true).eq('kind','character').order('sort_order'),
   ]);
 
   const initialCharacter = character || {
@@ -52,6 +53,7 @@ export default async function Game({ params, searchParams }: { params: Promise<{
       initialProgress={progress || null}
       runtimeSettings={runtimeSettings || null}
       visualPresets={visualPresets || []}
+      visualAssets={visualAssets || []}
       replayMode={replayMode}
       exploreMode={exploreMode}
       exploreStage={exploreMode ? stage || null : null}
