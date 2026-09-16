@@ -29,6 +29,7 @@ Production authority: current Vercel production remains untouched until explicit
 ## Runtime / visual state
 - Visual Studio settings change the real V4 runtime: preset, time, weather, density, particles, fog, vignette and camera zoom.
 - Runtime has movement game-feel polish: walk/idle motion, target pulse, arrival feedback and modal/feedback transitions.
+- Automatic click-to-target movement is being made frame-rate independent with a timed traversal target of roughly 0.9–2.4 seconds; WASD remains physical/optional.
 - Visual Studio previews use real procedural scene and character assets.
 - `components/admin/asset-library.tsx` lets the admin define HTTPS artwork overrides without code changes.
 - Scene presets support `config.background_url`.
@@ -37,9 +38,11 @@ Production authority: current Vercel production remains untouched until explicit
 - External character sprites are scale-normalized so large source images do not explode in size.
 
 ## Navigation / product state
-- Dashboard is the game command center.
+- Dashboard is the game command center and recommends the next useful activity from review due, active Plantão, interrupted case, weak topic, streak and next case.
 - Perfil, Revisão, Casos and Edital use a shared product navigation shell.
 - Plantão landing/report were simplified; active Plantão runs through V4.
+- User-facing technical language such as runtime/engine/V4/queue/After Action Report was removed from the commercial UX.
+- Plantão selection now prioritizes different missions inside the same shift and only repeats a mission when the available pool requires it.
 - The old duplicate active Plantão runtime must not be reintroduced.
 
 ## Preview warning
@@ -50,13 +53,15 @@ The most recent Vercel preview inspected (`dpl_D1nN5uNa2PEHS5F74zMqbgEuZNrj`) is
 That commit is substantially behind the current commercial branch. Do not promote or sign off that deployment. A fresh preview must compile the current HEAD and its build log must prove that the expected source revision was restored/built.
 
 ## Immediate next sequence
-1. Inspect permanent CI gates on the current HEAD: build, student journey and dependency/security audit.
-2. Fix any regression before deployment; do not bypass failing gates.
-3. Deploy a fresh Vercel preview from the current `jurisquest-commercial-20260916` HEAD and verify its actual source revision in build logs.
-4. Validate authenticated flows: login, Dashboard, Campanha, Plantão, Revisão, Perfil, Edital, Arquivo and ADM Visual Studio/asset library.
-5. Test external artwork override with at least one preset and one character, confirming SVG fallback still works.
-6. Continue commercial polish: direct asset upload/storage workflow, higher-fidelity scene/character art, mobile interaction QA, performance and monetization gating.
-7. At production promotion only, revoke broad authenticated `SELECT` on `missions` and grant only non-sensitive metadata columns. Keep `missions_client` for students and `missions_admin` for raw admin reads.
+1. Finish and validate the frame-rate-independent automatic movement patch; E2E must measure click-to-interaction below 10 seconds and preferably around 1–3 seconds on the CI runner.
+2. Remove the one-shot patch workflow/script after the generated runtime commit lands.
+3. Run permanent gates: build, student journey and dependency/security audit. Do not bypass failures.
+4. Deploy a fresh Vercel preview from the current `jurisquest-commercial-20260916` HEAD and verify its actual source revision in build logs.
+5. Validate authenticated flows: login, Dashboard, Campanha, Plantão, Revisão, Perfil, Edital, Arquivo and ADM Visual Studio/asset library.
+6. Test external artwork override with at least one preset and one character, confirming SVG fallback still works.
+7. If gates remain green, promote the commercial branch to production, then revoke broad authenticated `SELECT` on `missions` and grant only non-sensitive metadata columns.
+8. Smoke-test production login, Dashboard, one Plantão occurrence, one Campaign case, review, mobile and admin access.
+9. Continue higher-fidelity scene/character art, mobile interaction QA, performance and monetization gating.
 
 ## Product rules
 - Do not rebuild the game from zero unless explicitly requested.
