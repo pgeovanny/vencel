@@ -17,6 +17,15 @@ Production authority: current Vercel production remains untouched until explicit
 - Admin raw mission reads use `missions_admin`; administrative writes still target `missions` under admin RLS.
 - Broad authenticated `SELECT` on `missions` is temporarily retained only so the old production deployment keeps working during preview validation. Final revoke happens only with promotion of the migrated app.
 
+## Security hardening completed on 2026-09-16
+- Added and applied `supabase/migrations/20260916195000_commercial_security_hardening.sql`.
+- `sanitize_mission_json_v1` now has an explicit safe `search_path`.
+- `missions_client` and `missions_admin` use `security_invoker=true` plus the existing access/admin guards.
+- Anonymous grants were removed from Plantão tables and authentication-required gameplay RPCs.
+- Internal trigger helpers are no longer directly executable by API roles.
+- Supabase security advisor no longer reports the previous `SECURITY DEFINER VIEW` error or mutable-search-path warning for the sanitizer.
+- Keep the authenticated gameplay RPC grants that are intentionally part of the application contract.
+
 ## Runtime / visual state
 - Visual Studio settings change the real V4 runtime: preset, time, weather, density, particles, fog, vignette and camera zoom.
 - Runtime has movement game-feel polish: walk/idle motion, target pulse, arrival feedback and modal/feedback transitions.
@@ -33,13 +42,20 @@ Production authority: current Vercel production remains untouched until explicit
 - Plantão landing/report were simplified; active Plantão runs through V4.
 - The old duplicate active Plantão runtime must not be reintroduced.
 
+## Preview warning
+The most recent Vercel preview inspected (`dpl_D1nN5uNa2PEHS5F74zMqbgEuZNrj`) is not a trustworthy final preview of this branch. Its build log ran `bootstrap.cjs` and reported:
+
+`JurisQuest commercial preview restored at 95e1c69006d49a2d1036528f44a0a474d6ec82c9`
+
+That commit is substantially behind the current commercial branch. Do not promote or sign off that deployment. A fresh preview must compile the current HEAD and its build log must prove that the expected source revision was restored/built.
+
 ## Immediate next sequence
-1. Wait for and inspect permanent CI gates on the consolidated branch: build, student journey and dependency audit.
+1. Inspect permanent CI gates on the current HEAD: build, student journey and dependency/security audit.
 2. Fix any regression before deployment; do not bypass failing gates.
-3. Deploy a fresh Vercel preview from `jurisquest-commercial-20260916`; production remains untouched.
+3. Deploy a fresh Vercel preview from the current `jurisquest-commercial-20260916` HEAD and verify its actual source revision in build logs.
 4. Validate authenticated flows: login, Dashboard, Campanha, Plantão, Revisão, Perfil, Edital, Arquivo and ADM Visual Studio/asset library.
 5. Test external artwork override with at least one preset and one character, confirming SVG fallback still works.
-6. After preview approval, continue commercial polish: direct asset upload/storage workflow, higher-fidelity scene/character art, mobile interaction QA, performance and monetization gating.
+6. Continue commercial polish: direct asset upload/storage workflow, higher-fidelity scene/character art, mobile interaction QA, performance and monetization gating.
 7. At production promotion only, revoke broad authenticated `SELECT` on `missions` and grant only non-sensitive metadata columns. Keep `missions_client` for students and `missions_admin` for raw admin reads.
 
 ## Product rules
