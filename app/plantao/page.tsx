@@ -114,10 +114,11 @@ export default async function PlantaoPage({searchParams}:{searchParams:Promise<S
     },
   };
 
-  const[{data:character},{data:syllabus},{data:runtimeSettings}]=await Promise.all([
+  const[{data:character},{data:syllabus},{data:runtimeSettings},{data:visualPresets}]=await Promise.all([
     mission.syllabus_id?sb.from('student_characters').select('*').eq('user_id',user.id).eq('syllabus_id',mission.syllabus_id).maybeSingle():Promise.resolve({data:null}),
     mission.syllabus_id?sb.from('exam_syllabi').select('position_name').eq('id',mission.syllabus_id).maybeSingle():Promise.resolve({data:null}),
     sb.from('game_runtime_settings').select('*').eq('id',1).maybeSingle(),
+    sb.from('game_visual_presets').select('slug,name,config').eq('active',true).order('sort_order'),
   ]);
 
   const initialCharacter=character||{
@@ -136,6 +137,7 @@ export default async function PlantaoPage({searchParams}:{searchParams:Promise<S
       initialCharacter={initialCharacter}
       initialProgress={null}
       runtimeSettings={runtimeSettings||null}
+      visualPresets={visualPresets||[]}
       patrolContext={{runId:run.id,itemId:item.id,sequence:Number(item.sequence_no||1),total:Number(run.item_count||1),prioritySource:item.priority_source||'gap'}}
     />
     <GameCommercialLayer/>
