@@ -1,0 +1,27 @@
+name: JurisQuest Target Action Patch
+
+on:
+  push:
+    branches: [jurisquest-commercial-20260916]
+
+permissions:
+  contents: write
+
+jobs:
+  patch-target-action:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jurisquest-commercial-20260916
+          fetch-depth: 0
+      - name: Apply target action + E2E patch
+        run: python scripts/patch_target_action_and_e2e.py
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add components/game-runtime-pro-v4.tsx qa/user-flow.spec.mjs
+          git commit -m "fix: add semantic go-to-target action and stabilize journey QA"
+          git push origin HEAD:jurisquest-commercial-20260916
