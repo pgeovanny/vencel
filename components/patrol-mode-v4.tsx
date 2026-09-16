@@ -16,7 +16,7 @@ type Props={
   error?:string;
 };
 
-const PRIORITY:Record<string,string>={review_due:'REVISÃO VENCIDA',error:'PONTO FRACO',gap:'LACUNA DO EDITAL',maintenance:'MANUTENÇÃO'};
+const PRIORITY:Record<string,string>={review_due:'REVISÃO',error:'PONTO A REFORÇAR',gap:'CONTEÚDO A CONSOLIDAR',maintenance:'CONSOLIDAÇÃO'};
 
 export default function PatrolModeV4(props:Props){
   if(props.view==='complete'&&props.run)return <Complete run={props.run} items={props.reportItems||[]}/>;
@@ -31,10 +31,10 @@ function Landing({dueCount=0,xp=0,streak=0,recentRuns=[],error}:Props){
       <div className="dispatchSweep" aria-hidden="true"/>
 
       <section className="dispatchMission">
-        <div className="dispatchSignal"><i/> CENTRAL ONLINE <span>•</span> FILA ADAPTATIVA PRONTA</div>
-        <small className="dispatchEy">MODO RECORRENTE • SESSÃO DE 3–8 MIN</small>
+        <div className="dispatchSignal"><i/> PRÓXIMO TURNO <span>•</span> PRONTO PARA COMEÇAR</div>
+        <small className="dispatchEy">SESSÃO RÁPIDA • 3–8 MIN</small>
         <h1>Assuma o<br/><span>Plantão.</span></h1>
-        <p>O próximo turno é montado pelo seu histórico real. Revisões vencidas entram primeiro; depois erros, lacunas do edital e manutenção.</p>
+        <p>O próximo turno combina revisões no prazo, pontos que você errou e conteúdos ainda pouco treinados. Entre e foque no que mais pode melhorar seu resultado agora.</p>
         {error&&<div className="dispatchError">{error}</div>}
         <form action={startPlantao} className="dispatchAction">
           <input type="hidden" name="size" value="5"/>
@@ -44,22 +44,22 @@ function Landing({dueCount=0,xp=0,streak=0,recentRuns=[],error}:Props){
       </section>
 
       <aside className="adaptiveRadar">
-        <header><div><small>PRIORIDADE DO MOTOR</small><strong>Fila do próximo turno</strong></div><span className="radarLive"><i/> AO VIVO</span></header>
+        <header><div><small>FOCO DE HOJE</small><strong>O que pode entrar no turno</strong></div><span className="radarLive"><i/> PERSONALIZADO</span></header>
         <div className="radarCore">
           <div className="radarRings"><i/><i/><i/><i/></div>
           <div className="radarSweepLine"/>
           <div className={`radarNode due ${dueCount?'hot':''}`}><b>{dueCount}</b><span>REVISÃO</span></div>
-          <div className="radarNode error"><b>02</b><span>ERROS</span></div>
-          <div className="radarNode gap"><b>03</b><span>LACUNAS</span></div>
-          <div className="radarNode keep"><b>04</b><span>MANUT.</span></div>
-          <div className="radarCenter"><b>JQ</b><small>ADAPT</small></div>
+          <div className="radarNode error"><b>02</b><span>REFORÇO</span></div>
+          <div className="radarNode gap"><b>03</b><span>EDITAL</span></div>
+          <div className="radarNode keep"><b>04</b><span>CONSOLIDAR</span></div>
+          <div className="radarCenter"><b>JQ</b><small>HOJE</small></div>
         </div>
         <div className="radarLegend"><div><span>XP</span><b>{xp}</b></div><div><span>SEQUÊNCIA</span><b>{streak}</b></div><div className={dueCount?'warn':''}><span>VENCIDAS</span><b>{dueCount}</b></div></div>
       </aside>
     </section>
 
     <section className="shiftHistory">
-      <header><div><small>HISTÓRICO OPERACIONAL</small><h2>Últimos turnos</h2></div><p>Cada erro alimenta a recuperação ativa. O próximo Plantão muda com você.</p></header>
+      <header><div><small>SEUS ÚLTIMOS TURNOS</small><h2>Histórico recente</h2></div><p>O que você ainda erra volta a aparecer; o que já domina abre espaço para novos pontos do edital.</p></header>
       {recentRuns.length?<div className="shiftRows">{recentRuns.slice(0,3).map((r,i)=>{const acc=r.item_count?Math.round(r.correct_count/r.item_count*100):0;return <article key={r.id}><span className="shiftNo">{String(i+1).padStart(2,'0')}</span><div><small>{new Date(r.started_at).toLocaleDateString('pt-BR')}</small><b>{r.correct_count}/{r.item_count} decisões corretas</b></div><div className="shiftBar"><i style={{width:`${acc}%`}}/></div><strong>{acc}%</strong><em>+{r.xp_earned} XP</em></article>})}</div>:<div className="noShift">Seu primeiro relatório de turno aparecerá aqui.</div>}
     </section>
     <ProductMobileNav active="plantao"/>
@@ -72,11 +72,11 @@ function Complete({run,items}:{run:RunSummary;items:ReportItem[]}){
   return <main className="dispatchRoot reportRoot">
     <ProductHeader active="plantao"/>
     <section className="afterAction">
-      <header className="reportHero"><div><small>AFTER ACTION REPORT • TURNO ENCERRADO</small><h1>{accuracy>=80?'Operação concluída.':'Turno registrado.'}</h1><p>O histórico foi atualizado. Decisões incorretas já entraram no circuito de recuperação e podem retornar com prioridade.</p></div><div className="accuracySeal" style={{'--angle':`${accuracy*3.6}deg`} as React.CSSProperties}><div><strong>{accuracy}%</strong><span>PRECISÃO</span></div></div></header>
+      <header className="reportHero"><div><small>RESUMO DO TURNO</small><h1>{accuracy>=80?'Operação concluída.':'Turno registrado.'}</h1><p>Seu desempenho foi atualizado. O que ainda precisa de reforço já ficou separado para reaparecer no momento certo.</p></div><div className="accuracySeal" style={{'--angle':`${accuracy*3.6}deg`} as React.CSSProperties}><div><strong>{accuracy}%</strong><span>PRECISÃO</span></div></div></header>
 
       <section className="reportMetrics"><article><small>OCORRÊNCIAS</small><b>{run.item_count}</b></article><article><small>ACERTOS</small><b>{run.correct_count}</b></article><article><small>RECUPERAR</small><b>{Math.max(0,run.item_count-run.correct_count)}</b></article><article className="xp"><small>XP DO TURNO</small><b>+{run.xp_earned}</b></article></section>
 
-      <section className="reportTimeline"><header><small>REGISTRO DAS OCORRÊNCIAS</small><span>resultado • origem adaptativa • decisão</span></header>{items.map(i=><article key={i.id} className={i.correct?'ok':'bad'}><span className="eventNo">{String(i.sequence_no).padStart(2,'0')}</span><i/><div><small>{PRIORITY[i.priority_source]||'PLANTÃO'}</small><b>{i.missionTitle}</b><p>{i.decisionTitle}</p></div><strong>{i.correct?'CONSOLIDADA':'RECUPERAR'}</strong></article>)}</section>
+      <section className="reportTimeline"><header><small>REGISTRO DAS OCORRÊNCIAS</small><span>resultado • motivo • decisão</span></header>{items.map(i=><article key={i.id} className={i.correct?'ok':'bad'}><span className="eventNo">{String(i.sequence_no).padStart(2,'0')}</span><i/><div><small>{PRIORITY[i.priority_source]||'PLANTÃO'}</small><b>{i.missionTitle}</b><p>{i.decisionTitle}</p></div><strong>{i.correct?'CONSOLIDADA':'RECUPERAR'}</strong></article>)}</section>
 
       <div className="reportActions"><form action={startPlantao}><input type="hidden" name="size" value="5"/><button>ASSUMIR NOVO TURNO <b>→</b></button></form><a href="/review">Abrir recuperação</a><a href="/dashboard">Voltar à Central</a></div>
     </section>
