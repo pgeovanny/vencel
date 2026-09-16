@@ -51,8 +51,10 @@ jobs:
           NODE
           echo 'QA_BASE_URL=http://127.0.0.1:3000' >> "$GITHUB_ENV"
 
-      - name: Run student journey
-        run: node qa/user-flow.spec.mjs
+      - name: Run student journey in a real browser session
+        run: |
+          sed -i 's/chromium.launch({headless:true})/chromium.launch({headless:false})/' qa/user-flow.spec.mjs
+          xvfb-run -a node qa/user-flow.spec.mjs
 
       - name: Print server log on failure
         if: failure()
