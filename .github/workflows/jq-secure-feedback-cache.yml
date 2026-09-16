@@ -1,0 +1,27 @@
+name: JurisQuest Secure Feedback Cache Patch
+
+on:
+  push:
+    branches: [jurisquest-commercial-20260916]
+
+permissions:
+  contents: write
+
+jobs:
+  patch-secure-feedback:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jurisquest-commercial-20260916
+          fetch-depth: 0
+      - name: Patch runtime feedback cache
+        run: python scripts/patch_secure_feedback_cache.py
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add components/game-runtime-pro-v4.tsx
+          git commit -m "fix: consume decision feedback only after server verdict"
+          git push origin HEAD:jurisquest-commercial-20260916
