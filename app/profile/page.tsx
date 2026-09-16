@@ -20,7 +20,7 @@ export default async function ProfilePage({searchParams}:{searchParams:Promise<S
   if(!user)redirect('/');
 
   const[{data:missions},{data:syllabi},{data:characters},{data:stats}]=await Promise.all([
-    sb.from('missions').select('syllabus_id').eq('status','published'),
+    sb.from('missions_client').select('syllabus_id').eq('status','published'),
     sb.from('exam_syllabi').select('id,title,agency,position_name,exam_name,status').eq('status','published').order('created_at'),
     sb.from('student_characters').select('*').eq('user_id',user.id),
     sb.from('student_stats').select('xp,current_streak,missions_completed,reviews_completed').eq('user_id',user.id).maybeSingle(),

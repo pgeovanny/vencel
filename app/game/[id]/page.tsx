@@ -12,7 +12,7 @@ export default async function Game({ params, searchParams }: { params: Promise<{
   if (!user) redirect('/');
 
   const { data: missionRow, error } = await sb
-    .from('missions')
+    .from('missions_client')
     .select('id,title,summary,mission_json,syllabus_id')
     .eq('id', id)
     .eq('status', 'published')

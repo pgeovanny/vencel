@@ -8,7 +8,7 @@ export default async function SyllabusPage({params}:{params:Promise<{id:string}>
     sb.from('exam_syllabi').select('id,title,exam_name,agency,position_name,exam_year,status').eq('id',id).eq('status','published').maybeSingle(),
     sb.from('syllabus_topics').select('id,code,title,discipline,order_index,weight,source_ref,metadata').eq('syllabus_id',id).order('order_index'),
     sb.from('mission_topics').select('mission_id,topic_id,coverage_weight,is_primary'),
-    sb.from('missions').select('id,title,summary,sequence_no').eq('syllabus_id',id).eq('status','published').order('sequence_no'),
+    sb.from('missions_client').select('id,title,summary,sequence_no').eq('syllabus_id',id).eq('status','published').order('sequence_no'),
     sb.from('mission_progress').select('mission_id,status,progress_percent').eq('user_id',user.id)
   ]);if(!syllabus)notFound();
   const missionMap=new Map((missions||[]).map((m:any)=>[m.id,m])),progressMap=new Map((progress||[]).map((p:any)=>[p.mission_id,p]));let weightedDone=0,weightedTotal=0;

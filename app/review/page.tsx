@@ -13,7 +13,7 @@ export default async function ReviewPage(){
     sb.from('student_stats').select('*').eq('user_id',user.id).maybeSingle(),
   ]);
   const ids=[...new Set([...(due||[]),...(upcoming||[])].map((r:any)=>r.mission_id).filter(Boolean))];
-  const{data:missions}=ids.length?await sb.from('missions').select('id,title,summary').in('id',ids):{data:[] as any[]};
+  const{data:missions}=ids.length?await sb.from('missions_client').select('id,title,summary').in('id',ids):{data:[] as any[]};
   const mm=new Map((missions||[]).map((m:any)=>[m.id,m]));
   const first=due?.[0];
   const firstMission:any=first?mm.get(first.mission_id):null;

@@ -33,7 +33,7 @@ export default async function PlantaoPage({searchParams}:{searchParams:Promise<S
   if(run.status==='completed'){
     const{data:items}=await sb.from('patrol_items').select('id,sequence_no,mission_id,decision_id,priority_source,correct').eq('run_id',run.id).eq('user_id',user.id).order('sequence_no');
     const missionIds=[...new Set((items||[]).map((x:any)=>x.mission_id))];
-    const{data:missions}=missionIds.length?await sb.from('missions').select('id,title,mission_json').in('id',missionIds):{data:[] as any[]};
+    const{data:missions}=missionIds.length?await sb.from('missions_client').select('id,title,mission_json').in('id',missionIds):{data:[] as any[]};
     const mmap=new Map((missions||[]).map((m:any)=>[m.id,m]));
     const reportItems=(items||[]).map((item:any)=>{
       const mission:any=mmap.get(item.mission_id);
@@ -48,7 +48,7 @@ export default async function PlantaoPage({searchParams}:{searchParams:Promise<S
   const{data:item}=await sb.from('patrol_items').select('*').eq('run_id',run.id).eq('user_id',user.id).is('answered_at',null).order('sequence_no').limit(1).maybeSingle();
   if(!item)redirect('/plantao?error='+encodeURIComponent('O turno ficou sem ocorrência pendente. Inicie um novo plantão.'));
 
-  const{data:mission}=await sb.from('missions').select('id,title,summary,mission_json,syllabus_id,environment_theme').eq('id',item.mission_id).eq('status','published').maybeSingle();
+  const{data:mission}=await sb.from('missions_client').select('id,title,summary,mission_json,syllabus_id,environment_theme').eq('id',item.mission_id).eq('status','published').maybeSingle();
   if(!mission)redirect('/plantao?error='+encodeURIComponent('A ocorrência selecionada não está mais publicada.'));
 
   const mj:any=mission.mission_json||{};

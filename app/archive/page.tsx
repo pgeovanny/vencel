@@ -9,7 +9,7 @@ export default async function ArchivePage(){
 
   const [{data:progress},{data:missions}]=await Promise.all([
     sb.from('mission_progress').select('mission_id,status,score_first_try,score_best,completed_at').eq('user_id',user.id).eq('status','completed').order('completed_at',{ascending:false}),
-    sb.from('missions').select('id,title,summary,sequence_no,mission_json,syllabus_id').eq('status','published').order('sequence_no')
+    sb.from('missions_client').select('id,title,summary,sequence_no,mission_json,syllabus_id').eq('status','published').order('sequence_no')
   ]);
   const done=new Map((progress||[]).map((p:any)=>[p.mission_id,p]));
   const completed=(missions||[]).filter((m:any)=>done.has(m.id));

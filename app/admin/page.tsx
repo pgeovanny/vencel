@@ -10,7 +10,7 @@ export default async function Admin(){
   const[{count:profiles},{count:attempts},{count:missions},{count:completed},{count:presets},{count:activeGrants},{count:pendingReviews},{count:syllabiCount},{count:patrolCompleted},{count:patrolActive},{data:first},{data:settings},{data:catalog}]=await Promise.all([
     sb.from('profiles').select('*',{count:'exact',head:true}),
     sb.from('decision_attempts').select('*',{count:'exact',head:true}),
-    sb.from('missions').select('*',{count:'exact',head:true}).eq('status','published'),
+    sb.from('missions_admin').select('*',{count:'exact',head:true}).eq('status','published'),
     sb.from('mission_progress').select('*',{count:'exact',head:true}).eq('status','completed'),
     sb.from('game_visual_presets').select('*',{count:'exact',head:true}).eq('active',true),
     sb.from('access_grants').select('*',{count:'exact',head:true}).eq('status','active'),

@@ -7,7 +7,7 @@ export default async function AdminSyllabi(){
   const[{data:syllabi},{data:topics},{data:missions},{data:links}]=await Promise.all([
     sb.from('exam_syllabi').select('*').order('created_at',{ascending:false}),
     sb.from('syllabus_topics').select('id,syllabus_id,code,title,discipline,weight,source_ref,order_index').order('order_index'),
-    sb.from('missions').select('id,title,syllabus_id,status'),
+    sb.from('missions_admin').select('id,title,syllabus_id,status'),
     sb.from('mission_topics').select('mission_id,topic_id')
   ]);
   return <main className="syControl">

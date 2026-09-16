@@ -14,7 +14,7 @@ export default async function ReviewRun({params}:{params:Promise<{id:string}>}){
   if(new Date(review.due_at).getTime()>Date.now())redirect('/review');
   if(!review.mission_id)redirect('/review');
   const [{data:mission},{data:progress}]=await Promise.all([
-    sb.from('missions').select('id,title,mission_json').eq('id',review.mission_id).eq('status','published').maybeSingle(),
+    sb.from('missions_client').select('id,title,mission_json').eq('id',review.mission_id).eq('status','published').maybeSingle(),
     sb.from('mission_progress').select('mistakes,facts,decisions,status').eq('user_id',user.id).eq('mission_id',review.mission_id).maybeSingle(),
   ]);
   if(!mission)notFound();

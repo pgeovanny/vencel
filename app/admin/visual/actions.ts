@@ -32,7 +32,7 @@ export async function saveMissionVisual(input: unknown) {
   if (!user) return { ok: false, error: 'Sessão expirada.' };
   const { data: isAdmin } = await sb.rpc('is_admin');
   if (!isAdmin) return { ok: false, error: 'Acesso administrativo necessário.' };
-  const { data: row, error: readError } = await sb.from('missions').select('mission_json').eq('id', parsed.data.missionId).maybeSingle();
+  const { data: row, error: readError } = await sb.from('missions_admin').select('mission_json').eq('id', parsed.data.missionId).maybeSingle();
   if (readError || !row) return { ok: false, error: 'Missão não encontrada.' };
   const mj: any = structuredClone(row.mission_json || {});
   mj.visual_theme = { ...(mj.visual_theme || {}), style:'anime_chibi_3q', ui:parsed.data.uiTheme, default_preset:parsed.data.defaultPreset, contract:'jurisquest.mission.v4-unified' };

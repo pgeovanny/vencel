@@ -12,7 +12,7 @@ export default async function Dashboard(){
 
   const[{data:catalog},{data:missions},{data:progress},{data:isAdmin},{data:syllabi},{data:stats},{data:dueReviews},{data:grants},{data:characters},{data:activePatrol}]=await Promise.all([
     sb.from('mission_catalog').select('*').eq('status','published').order('sequence_no'),
-    sb.from('missions').select('id,syllabus_id').eq('status','published'),
+    sb.from('missions_client').select('id,syllabus_id').eq('status','published'),
     sb.from('mission_progress').select('mission_id,status,progress_percent,score_best,mistakes').eq('user_id',user.id),
     sb.rpc('is_admin'),
     sb.from('exam_syllabi').select('id,title,exam_name,agency,position_name').eq('status','published').order('created_at'),
