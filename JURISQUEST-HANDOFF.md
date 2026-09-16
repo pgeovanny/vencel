@@ -1,261 +1,179 @@
 # JurisQuest — Handoff técnico/comercial
 
-Atualizado em 2026-09-16.
+Atualizado em 2026-09-16 após consolidação do runtime e hardening de segurança.
 
 ## 1. Estado confiável
 
-Fonte real recuperada em GitHub:
+Fonte real:
 - repo: `pgeovanny/vencel`
-- branch corrente: `jurisquest-next`
-- branch de trabalho criada: `jurisquest-commercial-20260916`
+- produção/fonte pública atual: branch `jurisquest-next`
+- branch segura de evolução comercial: `jurisquest-commercial-20260916`
+- produção pública: `https://jurisquest-next.vercel.app`
+- Supabase principal: `lgyayqdvsevbhyijbdqh`
 
-Produção:
-- `https://jurisquest-next.vercel.app`
-- missão de referência: `https://jurisquest-next.vercel.app/game/22226ea7-dffd-4309-b919-223563c4a363`
+Não usar V17/V18/V19 como substituto do Next. Não reconstruir o jogo. Não restaurar Pro V3 como runtime ativo.
 
-Não usar V17/V18/V19 como substituto do Next. Esses artefatos podem servir de referência visual/mecânica apenas.
+Leia também:
+- `AGENTS.md`
+- `docs/JURISQUEST_CONTINUATION.md`
 
 ## 2. Runtime atual
 
-A rota `app/game/[id]/page.tsx` monta `components/game-runtime-pro-v3.tsx`.
+O runtime único vigente é:
+- `components/game-runtime-pro-v4.tsx`
 
-O Pro V3 já possui:
+Campanha e Plantão usam o mesmo motor. A rota `app/game/[id]/page.tsx` monta o Pro V4 e consome `missions_client`.
+
+O Pro V4 preserva a base funcional do Pro V3 e adiciona a consolidação comercial já feita:
 - personagem/chibi direcional;
-- movimentação e colisões;
+- movimentação, colisões e auto-walk;
 - cenários em camadas;
-- NPCs e objetos;
-- proximidade/interação;
+- NPCs, objetos e proximidade/interação;
 - objetivos sequenciais;
 - fatos/evidências;
-- decisões;
-- feedback detalhado;
-- transição de etapas;
-- conclusão;
-- replay;
-- exploração livre;
+- decisões e feedback técnico;
+- transição de etapas, conclusão, replay e exploração;
 - persistência de progresso;
-- histórico de tentativas;
-- integração com revisão.
+- integração com revisão;
+- modo Campanha e modo Plantão no mesmo runtime;
+- Visual Studio aplicado ao runtime real;
+- assets externos opcionais com fallback procedural.
 
-Arquivos principais do motor:
-- `components/game-runtime-pro-v3.tsx`
-- `lib/game/character-assets-v2.ts`
-- `lib/game/character-directional-v3.ts`
-- `lib/game/scene-assets-v3.ts`
-- `lib/game/studio-assets.ts`
-- `lib/game/studio-css.ts`
-- `lib/game/visual-contract.ts`
+Não criar um segundo runtime para Plantão.
 
-## 3. Banco e segurança
+## 3. Segurança — P0 concluído
 
-Supabase principal: `lgyayqdvsevbhyijbdqh`.
+O P0 antigo não é mais a próxima tarefa.
 
-Tabelas relevantes incluem:
-- `missions`
-- `mission_versions`
-- `mission_progress`
-- `decision_attempts`
-- `review_queue`
-- `student_stats`
-- `xp_ledger`
-- `exam_syllabi`
-- `syllabus_topics`
-- `mission_topics`
-- `student_characters`
-- `access_grants`
-- `content_cycles`
-- `cycle_missions`
-- `game_runtime_settings`
-- `game_visual_presets`
-- `game_asset_catalog`
+Já está implementado:
+- `secure_decision_attempt_before_insert()` deriva no banco `correct`, `attempt_no`, `selected_text` e feedback confiável;
+- `submit_decision_attempt_v1(...)` é o endpoint confiável para decisões de Campanha/Revisão;
+- `submit_patrol_answer(...)` resolve decisões do Plantão no servidor;
+- conclusão de missão é validada contra tentativas registradas no servidor;
+- revisão só conclui/gera XP após respostas esperadas terem sido recuperadas;
+- XP possui chaves idempotentes para impedir farming simples;
+- payload inicial do aluno usa `missions_client`, com `mission_json` sanitizado;
+- JSON bruto administrativo usa `missions_admin` com guarda de admin;
+- `20260916195000_commercial_security_hardening.sql` versiona as views/função de sanitização, ativa `security_invoker`, fixa `search_path` e remove grants anônimos desnecessários.
 
-### Vulnerabilidade prioritária
-O cliente do Pro V3 ainda:
-1. calcula se a alternativa é correta;
-2. calcula `attempt_no` consultando a tabela;
-3. envia `correct`, `attempt_no` e `selected_text` ao inserir em `decision_attempts`.
+Regra: não reintroduzir `choice.correct`, answer keys, feedback pós-resposta ou autoridade de XP/progresso no navegador.
 
-O trigger de recompensa usa esses valores para conceder XP. Um cliente manipulado pode fabricar acerto/primeira tentativa.
+## 4. Plantão adaptativo — implementado
 
-### Correção-alvo
-Criar RPC/contrato atômico do servidor, por exemplo `submit_decision_attempt(p_mission_id, p_decision_id, p_selected_index, p_mode, p_review_id?)`, que:
-- usa `auth.uid()`;
-- valida acesso à missão;
-- carrega `mission_json` publicado/versão válida;
-- localiza a decisão por ID;
-- resolve alternativa correta pelo JSON armazenado no servidor;
-- deriva texto, correção e próximo `attempt_no` no banco;
-- insere a tentativa;
-- deixa o trigger conceder XP somente a partir do registro calculado pelo servidor;
-- retorna apenas feedback permitido e estado útil ao cliente;
-- impede replay/challenge/review de gerar recompensas indevidas.
+O Plantão já existe como loop recorrente e usa o Pro V4.
 
-Depois alterar `game-runtime-pro-v3.tsx` e `review-session.tsx` para não inserir diretamente em `decision_attempts`.
+Seleção server-side prioriza:
+1. revisão vencida;
+2. erro recente;
+3. lacuna/conteúdo não concluído;
+4. manutenção.
 
-## 4. Benchmark — Patrulha BR
+Há:
+- `patrol_runs`;
+- `patrol_items`;
+- `start_patrol_run(...)`;
+- `submit_patrol_answer(...)`;
+- `abandon_patrol_run(...)`;
+- relatório/XP ao final;
+- erro alimentando recuperação/revisão;
+- diversificação posterior de runs.
 
-Fontes públicas verificadas:
-- site: `https://patrulhabr.com/`
-- Google Play: app `com.patrulhabr.game`
+O objetivo comercial continua sendo sessão curta, repetível e adaptativa, sem sensação de questionário seco.
 
-Mecânica principal observada:
-- dirigir/patrulhar;
-- observar o fluxo;
-- escolher quem merece abordagem;
-- abordar;
-- enquadrar juridicamente a situação;
-- receber consequência imediata;
-- ganhar pontos/progredir ou perder recurso;
-- repetir em situações variadas.
+## 5. Visual Studio e assets
 
-O Google Play descreve o jogo como simulador educativo de fiscalização de trânsito, com dezenas de situações, artigos/classificações/medidas administrativas, patentes, skins e passe que libera mais situações.
+O Visual Studio altera o runtime real, incluindo preset, horário, clima, densidade, partículas, névoa, vignette e zoom de câmera.
 
-### O que aproveitar sem copiar
-- transformar item normativo em situação jogável curta;
-- observação antes da pergunta jurídica;
-- decisão contextual, não questão seca;
-- consequência visual imediata;
-- progressão persistente;
-- grande variedade de microcenários;
-- sessão curta com começo/fim claro;
-- loop que convida a jogar novamente.
+A biblioteca administrativa permite overrides HTTPS:
+- cenário: `config.background_url`;
+- personagem: `front_url`, `side_url`, `back_url`, `portrait_url`.
 
-### O que fazer melhor no JurisQuest
+O Pro V4 pré-carrega overrides e usa SVG procedural como fallback. A próxima camada visual deve elevar fidelidade sem sacrificar legibilidade e performance.
+
+## 6. Produto/UX já consolidado
+
+- Dashboard funciona como central do jogo.
+- Perfil, Revisão, Casos e Edital compartilham navegação de produto.
+- Plantão ativo não usa runtime duplicado.
+- Admin existente inclui missões, usuários, edital, comercial, Plantão e Visual Studio.
+
+Ainda precisa de QA final em mobile, performance, paywall/monetização e fluxo completo autenticado antes de produção.
+
+## 7. ALERTA — preview Vercel inspecionado está obsoleto
+
+O deployment de preview `dpl_D1nN5uNa2PEHS5F74zMqbgEuZNrj` ficou `READY`, mas o build log mostrou:
+
+`JurisQuest commercial preview restored at 95e1c69006d49a2d1036528f44a0a474d6ec82c9`
+
+Esse commit ficou dezenas de commits atrás da branch comercial. Logo:
+- esse preview NÃO é validação do estado atual;
+- não deve ser promovido;
+- um preview novo precisa ser gerado a partir do HEAD atual e o build log deve confirmar a fonte/commit compilado.
+
+A produção continua intocada até autorização explícita.
+
+## 8. Banco e promoção
+
+O `SELECT` amplo de `authenticated` sobre `missions` ainda é mantido temporariamente para compatibilidade com a produção antiga.
+
+Somente na promoção da aplicação migrada:
+- revogar acesso amplo legado a `missions`;
+- manter aluno em `missions_client`;
+- manter raw JSON administrativo em `missions_admin`;
+- repetir security advisor/RLS/paywall tests.
+
+Não antecipar esse revoke enquanto a produção antiga depender do contrato legado.
+
+## 9. Benchmark — Patrulha BR
+
+Usar somente princípios mecânicos:
+- observar/patrulhar;
+- investigar/interagir;
+- decidir juridicamente;
+- consequência imediata;
+- feedback técnico;
+- progressão e repetição.
+
+Não copiar arte, código, textos ou identidade.
+
+O JurisQuest deve fazer melhor em:
 - adaptação por edital/cargo;
-- revisão espaçada real;
-- priorização de erro e lacuna;
+- revisão espaçada;
+- priorização de erro/lacuna;
 - diagnóstico por tópico;
-- fundamentação jurídica após decisão;
-- narrativa/campanha além do loop curto;
+- campanha narrativa;
+- fundamentação jurídica;
+- conteúdo autoral/versionado;
 - servidor confiável;
-- conteúdo autoral versionado;
-- assinatura apoiada em conteúdo novo + adaptação contínua.
+- assinatura sustentada por adaptação + conteúdo novo.
 
-## 5. Modo Plantão
+## 10. Próxima sequência correta
 
-O Plantão deve ser um segundo loop, convivendo com a Campanha.
+1. Confirmar os workflows permanentes no HEAD atual: build, Security Audit e User E2E.
+2. Corrigir qualquer regressão antes de deploy.
+3. Gerar preview Vercel fresco realmente baseado no HEAD atual.
+4. Confirmar no build log o commit/fonte compilado.
+5. Executar fluxo autenticado real: login, Dashboard, Campanha, Plantão, Revisão, Perfil, Edital, Arquivo e ADM/Visual Studio.
+6. Testar ao menos um override externo de cenário e um de personagem, garantindo fallback SVG.
+7. Fazer QA mobile/performance e monetização/paywall.
+8. Somente após aprovação explícita, promover para produção e retirar o `SELECT` legado em `missions`.
 
-Entrada:
-1. revisões vencidas;
-2. erros recentes ainda não dominados;
-3. lacunas do edital;
-4. conteúdo novo elegível;
-5. manutenção de temas já dominados.
+## 11. Critério para produção
 
-Sessão de 3–8 minutos:
-1. chamada/ocorrência;
-2. cena curta;
-3. observação/interação;
-4. evidências/fatos;
-5. decisão jurídica;
-6. consequência;
-7. feedback técnico;
-8. registro de domínio;
-9. próxima ocorrência ou encerramento do plantão.
-
-Ao fim:
-- relatório de turno;
-- temas treinados;
-- erros recuperados;
-- lacunas reduzidas;
-- XP legítimo;
-- impacto no mapa do edital;
-- revisões futuras agendadas.
-
-## 6. Admin comercial
-
-O admin precisa evoluir para pipeline de conteúdo:
-- rascunho;
-- validação de schema;
-- preview jogável;
-- validação pedagógica;
-- publicação de versão imutável;
-- rollback/versionamento.
-
-Editor deve suportar:
-- cenário;
-- NPCs;
-- objetos/evidências;
-- diálogos;
-- objetivos;
-- decisões;
-- alternativas;
-- resposta correta;
-- feedback por distrator;
-- regra;
-- aplicação;
-- base legal;
-- pegadinha;
-- memória de prova;
-- consequências;
-- tópicos do edital e pesos;
-- disponibilidade em Campanha/Plantão/Review.
-
-## 7. UX desejada
-
-Dashboard:
-- navegação clara: Início | Casos | Revisão | Mapa do Edital;
-- personagem/avatar visível;
-- próxima operação como CTA principal;
-- situação da campanha;
-- progresso compacto;
-- casos/dossiês;
-- revisões e mapa;
-- mobile com bottom nav.
-
-Jogo:
-- `Voltar ao painel` claro;
-- menu de pausa com Continuar, Objetivos, Caderno, Configurações, Sair da missão e Sair da conta;
-- não esconder saída;
-- melhor hierarquia de objetivo e interação;
-- manter o Pro V3 funcional.
-
-## 8. Ordem de execução recomendada
-
-P0 — Segurança e consistência
-- corrigir submissão server-side de decisões;
-- garantir idempotência/concorrência de tentativas;
-- revisar XP, replay, review e missão;
-- testar RLS e paywall.
-
-P1 — Produto recorrente
-- implementar Plantão adaptativo;
-- conectar revisão + erros + lacunas;
-- relatório de turno;
-- mapa de domínio.
-
-P2 — UX
-- dashboard/nav/avatar;
-- pausa/saída/caderno;
-- mobile;
-- acessibilidade.
-
-P3 — Admin
-- autoria completa;
-- versionamento;
-- validação;
-- preview/publicação.
-
-P4 — Visual e conteúdo
-- elevar cenas e personagens sem sacrificar legibilidade/performance;
-- adicionar variedade de situações;
-- telemetria/capacidade do plano free.
-
-## 9. Critério para produção
-
-Não promover alteração ampla sem:
-- build limpo;
-- preview Vercel;
+Não promover sem:
+- CI verde no HEAD que será implantado;
+- preview correspondente ao mesmo HEAD;
 - login real;
-- missão real completa;
-- acerto e erro registrados corretamente;
-- replay sem farm;
+- missão completa com acerto/erro registrados corretamente;
+- replay sem farming;
+- Plantão completo;
 - revisão funcionando;
-- saída do jogo funcionando;
+- saída/pausa funcionando;
 - admin protegido;
 - paywall/RLS funcionando;
+- teste mobile;
 - rollback conhecido.
 
-## 10. Texto para colar em outro chat
+## 12. Texto para colar em outro chat
 
-> Continue o JurisQuest. Leia primeiro `AGENTS.md` e `JURISQUEST-HANDOFF.md` no repo `pgeovanny/vencel`, branch `jurisquest-commercial-20260916`. A fonte real está aí. A produção é `https://jurisquest-next.vercel.app`. Preserve `game-runtime-pro-v3.tsx`. Comece pelo P0 de segurança e siga o handoff; use Patrulha BR apenas como benchmark mecânico para o modo Plantão. Não reconstrua a partir de V17/V18/V19 e não altere produção sem preview/teste.
+> Continue o JurisQuest. Abra o repo `pgeovanny/vencel`, branch `jurisquest-commercial-20260916`, e leia primeiro `AGENTS.md`, `JURISQUEST-HANDOFF.md` e `docs/JURISQUEST_CONTINUATION.md`. Trabalhe a partir da fonte real. Preserve o runtime único `components/game-runtime-pro-v4.tsx`; não restaure Pro V3 nem use V17/V18/V19 como base. O P0 server-authoritative e o Plantão já estão implementados. Primeiro confirme o CI no HEAD e gere um preview novo realmente baseado nesse HEAD; o preview `dpl_D1nN5uNa2PEHS5F74zMqbgEuZNrj` está obsoleto porque restaurou `95e1c690...`. Não altere nem promova produção sem preview autenticado aprovado.
