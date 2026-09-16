@@ -3,7 +3,13 @@ name: JurisQuest User E2E
 on:
   push:
     branches: [jurisquest-commercial-20260916]
+    paths-ignore:
+      - '**/*.md'
   workflow_dispatch:
+
+concurrency:
+  group: jurisquest-user-e2e-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   student-journey:
