@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import GameRuntime from '@/components/game-runtime-pro-v3';
+import GameCommercialLayer from '@/components/game-commercial-layer';
 
 export default async function Game({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ mode?: string; stage?: string }> }) {
   const { id } = await params;
@@ -50,18 +51,6 @@ export default async function Game({ params, searchParams }: { params: Promise<{
       exploreMode={exploreMode}
       exploreStage={exploreMode ? stage || null : null}
     />
-    <nav className="gameEscapeDock" aria-label="Navegação rápida da missão">
-      <a className="gameEscapePrimary" href="/dashboard"><span>←</span><b>Voltar ao painel</b></a>
-      <a href="/plantao">Plantão</a>
-      <a href="/review">Revisão</a>
-    </nav>
-    <style>{`
-      .gameEscapeDock{position:fixed;z-index:10050;right:14px;bottom:14px;display:flex;gap:5px;align-items:center;padding:5px;border:1px solid #33515a;border-radius:13px;background:#041015e8;backdrop-filter:blur(16px);box-shadow:0 14px 45px #000a;font-family:Inter,system-ui,sans-serif}
-      .gameEscapeDock a{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:9px;color:#81999f;text-decoration:none;font-size:9px;font-weight:800;letter-spacing:.02em}
-      .gameEscapeDock a:hover{background:#0d252d;color:#edf5f4}
-      .gameEscapeDock .gameEscapePrimary{background:#13272d;color:#dce8e7;border:1px solid #3b5860}
-      .gameEscapeDock .gameEscapePrimary span{color:#e4bd5d;font-size:13px}
-      @media(max-width:700px){.gameEscapeDock{left:10px;right:10px;bottom:max(8px,env(safe-area-inset-bottom));justify-content:space-between}.gameEscapeDock a{padding:8px}.gameEscapeDock .gameEscapePrimary{flex:1}.gameEscapeDock .gameEscapePrimary b{display:inline}}
-    `}</style>
+    <GameCommercialLayer/>
   </>;
 }
