@@ -25,24 +25,24 @@ export default async function Admin(){
 
   const modules=[
     {href:'/admin/missions',code:'01',ey:'CONTEÚDO',title:'Missões',text:'Editar narrativa, objetivos, evidências, decisões e publicação.',hot:true},
-    {href:'/admin/visual',code:'02',ey:'DIREÇÃO DE ARTE',title:'Visual Studio',text:'Cenários e personagens compartilhados entre Campanha e Plantão.',hot:true},
-    {href:'/admin/plantao',code:'03',ey:'RETENÇÃO',title:'Plantão',text:'Telemetria dos turnos, precisão e origem adaptativa.'},
+    {href:'/admin/visual',code:'02',ey:'DIREÇÃO DE ARTE',title:'Visual Studio',text:'Cenários, personagens, atmosfera e identidade visual do jogo.',hot:true},
+    {href:'/admin/plantao',code:'03',ey:'RETENÇÃO',title:'Plantão',text:'Telemetria dos turnos, precisão, revisão e recorrência.'},
     {href:'/admin/syllabi',code:'04',ey:'EDITAIS',title:'Mapa de Conteúdo',text:'Tópicos, vínculos e cobertura real de cada concurso.'},
-    {href:'/admin/users',code:'05',ey:'ACESSO',title:'Usuários',text:'Contas, grants, trial e revogação de acesso.'},
+    {href:'/admin/users',code:'05',ey:'ACESSO',title:'Usuários',text:'Contas, acessos, períodos de teste e revogações.'},
     {href:'/admin/commercial',code:'06',ey:'COMERCIAL',title:'Plano e Checkout',text:'Oferta, preço, trial e entitlement.'},
   ];
 
   return <main className="adm4">
-    <header className="admTop"><a href="/admin" className="admBrand">JURIS<span>QUEST</span> <b>CONTROL</b></a><nav><a href="/dashboard">Área do aluno</a>{first&&<a href={`/game/${first.mission_id}`}>Testar runtime</a>}<a href="/plantao">Testar Plantão</a></nav></header>
+    <header className="admTop"><a href="/admin" className="admBrand">JURIS<span>QUEST</span> <b>ADMIN</b></a><nav><a href="/dashboard">Área do aluno</a>{first&&<a href={`/game/${first.mission_id}`}>Testar caso</a>}<a href="/plantao">Testar Plantão</a></nav></header>
     <div className="admBody">
-      <aside className="admNav"><div className="navTitle"><small>CENTRAL ADMINISTRATIVA</small><strong>Sistema operacional</strong></div>{modules.map(m=><a key={m.href} href={m.href} className={m.hot?'hot':''}><span>{m.code}</span><div><small>{m.ey}</small><b>{m.title}</b><p>{m.text}</p></div><em>→</em></a>)}</aside>
+      <aside className="admNav"><div className="navTitle"><small>CENTRAL ADMINISTRATIVA</small><strong>Gestão do produto</strong></div>{modules.map(m=><a key={m.href} href={m.href} className={m.hot?'hot':''}><span>{m.code}</span><div><small>{m.ey}</small><b>{m.title}</b><p>{m.text}</p></div><em>→</em></a>)}</aside>
 
       <section className="admDeck">
         <div className="deckGrid"><i/><i/><i/><i/></div>
-        <header className="admHero"><div><small>JURISQUEST • COMMERCIAL BUILD</small><h1>Controle do produto</h1><p>Conteúdo, runtime, direção visual, retenção, acesso e telemetria trabalham sobre a mesma arquitetura.</p></div><div className="runtimeSeal"><i/> RUNTIME V4 UNIFICADO</div></header>
+        <header className="admHero"><div><small>JURISQUEST • ADMINISTRAÇÃO</small><h1>Controle do produto</h1><p>Conteúdo, experiência, direção visual, retenção, acesso e telemetria em um só lugar.</p></div><div className="runtimeSeal"><i/> PUBLICAÇÃO SEGURA</div></header>
 
         <section className="systemMap">
-          <div className="systemCore"><span>JQ</span><b>GAME RUNTIME</b><small>Campanha + Plantão</small></div>
+          <div className="systemCore"><span>JQ</span><b>PRODUTO</b><small>Casos + Plantão</small></div>
           <a href="/admin/missions" className="node n1"><span>MISSÕES</span><b>{missions??0}</b></a>
           <a href="/admin/visual" className="node n2"><span>VISUAL</span><b>{presets??0}</b></a>
           <a href="/admin/plantao" className="node n3"><span>PLANTÕES</span><b>{patrolCompleted??0}</b></a>
@@ -56,12 +56,12 @@ export default async function Admin(){
 
       <aside className="admIntel">
         <section><small>SAÚDE DO PRODUTO</small><div className="health"><i/> Operacional</div><p>Decisões e recompensas críticas são validadas no servidor.</p></section>
-        <section><small>SESSÕES ATIVAS</small><strong>{patrolActive??0}</strong><p>Plantões em andamento agora usam o mesmo runtime da Campanha.</p></section>
-        <section><small>ACESSOS ATIVOS</small><strong>{activeGrants??0}</strong><p>Entitlements válidos neste momento.</p></section>
+        <section><small>SESSÕES ATIVAS</small><strong>{patrolActive??0}</strong><p>Plantões em andamento neste momento.</p></section>
+        <section><small>ACESSOS ATIVOS</small><strong>{activeGrants??0}</strong><p>Contas com acesso válido neste momento.</p></section>
         <section><small>REVISÕES PENDENTES</small><strong>{pendingReviews??0}</strong><p>Fila atual de recuperação ativa.</p></section>
         <section><small>TENTATIVAS</small><strong>{attempts??0}</strong><p>Decisões registradas.</p></section>
         <section><small>CONCLUSÕES</small><strong>{completed??0}</strong><p>Missões finalizadas pelos alunos.</p></section>
-        <section className="engine"><small>ENGINE</small><p>Desktop <b>{settings?.renderer_quality||'high'}</b><br/>Mobile <b>{settings?.mobile_quality||'balanced'}</b><br/>UI <b>{settings?.ui_theme||'anime_noir'}</b></p><a href="/admin/visual">Abrir Visual Studio</a></section>
+        <section className="engine"><small>EXPERIÊNCIA VISUAL</small><p>Desktop <b>{settings?.renderer_quality||'high'}</b><br/>Mobile <b>{settings?.mobile_quality||'balanced'}</b><br/>Tema <b>{settings?.ui_theme||'anime_noir'}</b></p><a href="/admin/visual">Abrir Visual Studio</a></section>
       </aside>
     </div>
     <style>{CSS}</style>

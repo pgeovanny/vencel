@@ -72,7 +72,7 @@ function Complete({run,items}:{run:RunSummary;items:ReportItem[]}){
   return <main className="dispatchRoot reportRoot">
     <ProductHeader active="plantao"/>
     <section className="afterAction">
-      <header className="reportHero"><div><small>RESUMO DO TURNO</small><h1>{accuracy>=80?'Operação concluída.':'Turno registrado.'}</h1><p>Seu desempenho foi atualizado. O que ainda precisa de reforço já ficou separado para reaparecer no momento certo.</p></div><div className="accuracySeal" style={{'--angle':`${accuracy*3.6}deg`} as React.CSSProperties}><div><strong>{accuracy}%</strong><span>PRECISÃO</span></div></div></header>
+      <header className="reportHero"><div><small>RESUMO DO TURNO</small><h1>{accuracy>=80?'Turno concluído com consistência.':'Turno concluído.'}</h1><p>Seu desempenho foi atualizado. O que ainda precisa de reforço já ficou separado para reaparecer no momento certo.</p></div><div className="accuracySeal" style={{'--angle':`${accuracy*3.6}deg`} as React.CSSProperties}><div><strong>{accuracy}%</strong><span>PRECISÃO</span></div></div></header>
 
       <section className="reportMetrics"><article><small>OCORRÊNCIAS</small><b>{run.item_count}</b></article><article><small>ACERTOS</small><b>{run.correct_count}</b></article><article><small>RECUPERAR</small><b>{Math.max(0,run.item_count-run.correct_count)}</b></article><article className="xp"><small>XP DO TURNO</small><b>+{run.xp_earned}</b></article></section>
 

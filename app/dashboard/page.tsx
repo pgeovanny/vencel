@@ -113,7 +113,7 @@ export default async function Dashboard(){
         <div className="caseStrip">{(catalog||[]).map((m:any)=>{const p:any=pmap.get(m.mission_id);const pct=p?.status==='completed'?100:Number(p?.progress_percent||0);const available=ok.has(m.mission_id);const done=p?.status==='completed';return <a key={m.mission_id} className={`caseNode ${done?'done':''} ${pct>0&&!done?'current':''}`} href={available?`/game/${m.mission_id}`:'/premium'}><span>{String(m.sequence_no||0).padStart(2,'0')}</span><div><b>{m.title}</b><small>{done?'CONCLUÍDO':pct?`${pct}% EM ANDAMENTO`:available?'DISPONÍVEL':'BLOQUEADO'}</small></div><i><em style={{width:`${pct}%`}}/></i></a>})}</div>
       </section>
 
-      {isAdmin===true&&<a className="adminPortal" href="/admin"><span>CONTROLE DE OPERAÇÕES</span><b>Entrar no ADM</b><i>→</i></a>}
+      {isAdmin===true&&<a className="adminPortal" href="/admin"><span>ADMINISTRAÇÃO</span><b>Gerenciar JurisQuest</b><i>→</i></a>}
     </section>
 
     <nav className="mobileNav"><a className="active" href="/dashboard">Início</a><a href="/plantao">Plantão</a><a href="/archive">Casos</a><a href="/review">Revisão</a><a href="/profile">Perfil</a></nav>
