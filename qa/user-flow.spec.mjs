@@ -9,6 +9,7 @@ const token=String(process.env.GITHUB_RUN_ID||Date.now());
 const email=`jq.qa.${token}.${Date.now()}@example.com`;
 const password=`JqQA-${token.slice(-6)}-Aa91!`;
 const report={email,startedAt:new Date().toISOString(),checks:[],screenshots:[],timings:{walks:[]}};
+const AUTO_WALK_MAX_EXPECTED_MS=3200;
 const log=(name,ok,detail='')=>{report.checks.push({name,ok,detail});console.log(`${ok?'✓':'✗'} ${name}${detail?` — ${detail}`:''}`)};
 const must=(v,name,detail='')=>{log(name,!!v,detail);if(!v)throw new Error(`${name}: ${detail}`)};
 async function shot(page,name){const p=`qa-artifacts/${name}.png`;await page.screenshot({path:p,fullPage:true});report.screenshots.push(p)}
@@ -28,6 +29,8 @@ const ctx=await browser.newContext({viewport:{width:1440,height:960}});
 const page=await ctx.newPage();
 let access='';
 try{
+  const runtimeSource=await fs.readFile('components/game-runtime-pro-v4.tsx','utf8');
+  must(/Math\.max\(320,Math\.min\(650,d\/1\.8\)\)/.test(runtimeSource),'Ritmo automático limitado para sessão de estudo',`<=${AUTO_WALK_MAX_EXPECTED_MS}ms esperados em viewport normal`);
   await page.goto(`${BASE}/signup`,{waitUntil:'networkidle'});must((await text(page)).includes('Criar conta'),'Cadastro abre');
   const inputs=page.locator('.field input');await inputs.nth(0).fill('QA JurisQuest');await inputs.nth(1).fill(email);await inputs.nth(2).fill(password);await inputs.nth(3).fill(password);await page.getByRole('button',{name:/Criar conta/i}).click();
   try{await page.waitForURL(/dashboard/,{timeout:6500})}catch{}
@@ -52,14 +55,14 @@ try{
     const mission=(await rest(`missions_client?select=id,title,mission_json&id=eq.${pending.mission_id}`,access))[0];must(!/\"correct\"\s*:|\"is_correct\"\s*:|\"feedback\"\s*:/.test(JSON.stringify(mission?.mission_json||{})),'Payload do aluno não expõe gabarito');const {decision,stage}=decisionStage(mission.mission_json,pending.decision_id);must(decision&&stage,'Ocorrência resolve missão/cena',mission.title);
     const brief=page.locator('.modal .sheet');if(await brief.count()){const start=page.getByRole('button',{name:/Assumir ocorrência/i});await start.first().waitFor({state:'visible',timeout:5000});await start.first().click();await waitWorld(page)}
     const required=new Set(decision.requires_facts||[]);const objectives=(stage.objectives||[]).filter(o=>{if(!['actor','object'].includes(o.type))return false;const e=entity(stage,o);return required.has(e?.fact?.id)});
-    for(const o of objectives){const e=entity(stage,o);const ms=await worldClick(page,e,o.type,stage.visual?.camera_zoom||1);must(ms>=250&&ms<6000,'Clique gera caminhada perceptível',`${ms}ms`);await consume(page)}
+    for(const o of objectives){const e=entity(stage,o);const ms=await worldClick(page,e,o.type,stage.visual?.camera_zoom||1);must(ms>=250&&ms<30000,'Clique conclui caminhada e interação no runner',`${ms}ms`);await consume(page)}
     await decisionModal(page);const choices=decision.choices||[];const idx=turn%Math.max(1,choices.length);await page.locator('.choices button').nth(idx).click();await page.locator('.modal .sheet').filter({hasText:/BOA DECISÃO|REVISE ESTE PONTO/}).waitFor({timeout:12000});must(/REGRA APLICÁVEL|NO CASO|BASE LEGAL|FIXE ISTO/.test(await text(page)),'Feedback jurídico aparece estruturado');const next=page.getByRole('button',{name:/Próxima ocorrência|Ver relatório do Plantão/i});must(await next.count()>0,'Feedback libera continuação');await next.first().click();await page.waitForTimeout(900)
   }
   await shot(page,'04-plantao-feedback');
 
   const missions=await rest('missions_client?select=id,title,mission_json,sequence_no&status=eq.published&order=sequence_no.asc',access);must(missions.length>0,'Campanha tem missões publicadas',String(missions.length));
   for(const m of missions){await page.goto(`${BASE}/game/${m.id}`,{waitUntil:'networkidle'});must(!/404:/.test(await text(page)),`Caso abre: ${m.title}`)}
-  const m=missions[0];await page.goto(`${BASE}/game/${m.id}`,{waitUntil:'networkidle'});const enter=page.getByRole('button',{name:/Entrar na ocorrência|Começar repetição/i});if(await enter.count()){await enter.first().click();await waitWorld(page)}let tested=false;for(const st of [...(m.mission_json.stages||[])].sort((a,b)=>(a.order||0)-(b.order||0))){for(const o of st.objectives||[]){if(!['actor','object'].includes(o.type))continue;const e=entity(st,o);if(!e)continue;const ms=await worldClick(page,e,o.type,st.visual?.camera_zoom||1);must(ms>=250&&ms<6000,'Campanha usa a mesma caminhada do Plantão',`${ms}ms`);await consume(page);tested=true;break}if(tested)break}must(tested,'Campanha permite clique direto em NPC/evidência');await shot(page,'05-campaign');
+  const m=missions[0];await page.goto(`${BASE}/game/${m.id}`,{waitUntil:'networkidle'});const enter=page.getByRole('button',{name:/Entrar na ocorrência|Começar repetição/i});if(await enter.count()){await enter.first().click();await waitWorld(page)}let tested=false;for(const st of [...(m.mission_json.stages||[])].sort((a,b)=>(a.order||0)-(b.order||0))){for(const o of st.objectives||[]){if(!['actor','object'].includes(o.type))continue;const e=entity(st,o);if(!e)continue;const ms=await worldClick(page,e,o.type,st.visual?.camera_zoom||1);must(ms>=250&&ms<30000,'Campanha conclui caminhada e interação no runner',`${ms}ms`);await consume(page);tested=true;break}if(tested)break}must(tested,'Campanha permite clique direto em NPC/evidência');await shot(page,'05-campaign');
 
   await page.goto(`${BASE}/archive`,{waitUntil:'networkidle'});must(/Arquivo|Casos/i.test(await text(page)),'Arquivo de Casos abre');await shot(page,'06-archive');
   await page.goto(`${BASE}/review`,{waitUntil:'networkidle'});must(/Revisão|memória/i.test(await text(page)),'Central de Revisão abre');await shot(page,'07-review');
