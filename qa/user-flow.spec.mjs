@@ -30,7 +30,7 @@ const page=await ctx.newPage();
 let access='';
 try{
   const runtimeSource=await fs.readFile('components/game-runtime-pro-v4.tsx','utf8');
-  must(/Math\.max\(320,Math\.min\(650,d\/1\.8\)\)/.test(runtimeSource),'Ritmo automático limitado para sessão de estudo',`<=${AUTO_WALK_MAX_EXPECTED_MS}ms esperados em viewport normal`);
+  must(/duration=Math\.max\(560,Math\.min\(2200,620\+travel\*2\.05\)\)/.test(runtimeSource),'Ritmo automático limitado para sessão de estudo',`<=${AUTO_WALK_MAX_EXPECTED_MS}ms esperados em viewport normal`);
   await page.goto(`${BASE}/signup`,{waitUntil:'networkidle'});must((await text(page)).includes('Criar conta'),'Cadastro abre');
   const inputs=page.locator('.field input');await inputs.nth(0).fill('QA JurisQuest');await inputs.nth(1).fill(email);await inputs.nth(2).fill(password);await inputs.nth(3).fill(password);await page.getByRole('button',{name:/Criar conta/i}).click();
   try{await page.waitForURL(/dashboard/,{timeout:6500})}catch{}
