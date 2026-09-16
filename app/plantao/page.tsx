@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import PatrolMode from '@/components/patrol-mode-v2';
+import PatrolMode from '@/components/patrol-mode-v3';
 
 type Search={run?:string;error?:string};
 
@@ -69,6 +69,7 @@ export default async function PlantaoPage({searchParams}:{searchParams:Promise<S
       factTitle:fact.title||actor.name||'Depoimento',
       factText:fact.text||actor.goal||'',
       interactionText:actor.goal||'Conversar',
+      dialogue:Array.isArray(actor.dialogue)?actor.dialogue:[],
       required:!!fact.id&&required.has(fact.id),
       position:actor.position||{x:600,y:380},
     });
@@ -80,6 +81,7 @@ export default async function PlantaoPage({searchParams}:{searchParams:Promise<S
       id:`object:${object.id}`,
       sourceId:object.id,
       kind:'object',
+      objectKind:object.kind||'evidence',
       name:object.name||fact.title||'Evidência',
       role:object.role||'EVIDÊNCIA',
       factTitle:fact.title||object.name||'Evidência',
