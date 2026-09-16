@@ -128,6 +128,7 @@ export default async function PlantaoPage({searchParams}:{searchParams:Promise<S
 
   return <>
     <GameRuntime
+      key={item.id}
       mode="patrol"
       missionId={mission.id}
       mission={runtimeMission}
