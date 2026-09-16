@@ -1,0 +1,27 @@
+name: JurisQuest Mission Read Migration
+
+on:
+  push:
+    branches: [jurisquest-commercial-20260916]
+
+permissions:
+  contents: write
+
+jobs:
+  migrate-mission-reads:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jurisquest-commercial-20260916
+          fetch-depth: 0
+      - name: Apply mission read migration
+        run: python scripts/migrate_mission_reads.py
+      - name: Commit migration
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app docs/JURISQUEST_CONTINUATION.md
+          git commit -m "security: route student mission reads through sanitized view"
+          git push origin HEAD:jurisquest-commercial-20260916
