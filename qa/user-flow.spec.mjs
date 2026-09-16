@@ -29,9 +29,10 @@ const page=await ctx.newPage();
 let access='';
 try{
   await page.goto(`${BASE}/signup`,{waitUntil:'networkidle'});must((await text(page)).includes('Criar conta'),'Cadastro abre');
-  const inputs=page.locator('.field input');await inputs.nth(0).fill('QA JurisQuest');await inputs.nth(1).fill(email);await inputs.nth(2).fill(password);await inputs.nth(3).fill(password);await page.getByRole('button',{name:/Criar conta/i}).click();await page.waitForTimeout(1200);
-  if(!page.url().includes('/dashboard')){await page.goto(BASE,{waitUntil:'networkidle'});await page.locator('input[name=email]').fill(email);await page.locator('input[name=password]').fill(password);await page.getByRole('button',{name:/Entrar no JurisQuest/i}).click()}
-  await page.waitForURL(/dashboard/,{timeout:30000});log('Cadastro e login reais',true);await shot(page,'01-dashboard');
+  const inputs=page.locator('.field input');await inputs.nth(0).fill('QA JurisQuest');await inputs.nth(1).fill(email);await inputs.nth(2).fill(password);await inputs.nth(3).fill(password);await page.getByRole('button',{name:/Criar conta/i}).click();
+  try{await page.waitForURL(/dashboard/,{timeout:6500})}catch{}
+  if(!page.url().includes('/dashboard')){await page.goto(BASE,{waitUntil:'networkidle'});for(let attempt=0;attempt<4&&!page.url().includes('/dashboard');attempt++){await page.locator('input[name=email]').fill(email);await page.locator('input[name=password]').fill(password);await page.getByRole('button',{name:/Entrar no JurisQuest/i}).click();try{await page.waitForURL(/dashboard/,{timeout:4500})}catch{if(attempt<3){await page.waitForTimeout(300*(attempt+1));await page.goto(BASE,{waitUntil:'networkidle'})}}}}
+  await page.waitForURL(/dashboard/,{timeout:5000});log('Cadastro e login reais',true);await shot(page,'01-dashboard');
   const auth=await fetch(`${SUPA}/auth/v1/token?grant_type=password`,{method:'POST',headers:{apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify({email,password})});const session=await auth.json();must(auth.ok&&!!session.access_token,'Sessão QA válida',session?.msg||'');access=session.access_token;
   const grants=await rest(`access_grants?select=access_type,status&status=eq.active`,access);must(grants.length>0,'Novo aluno recebe acesso ativo',grants[0]?.access_type||'');
 
