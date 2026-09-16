@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { submitPlantaoAnswer } from '@/app/plantao/actions';
+import { submitCampaignDecision } from '@/app/game/actions';
 import { PALETTES as CHARACTERS, chibiSvg } from '@/lib/game/character-assets-v2';
 import { directionalChibiSvg, type Facing } from '@/lib/game/character-directional-v3';
 import { svgUri } from '@/lib/game/studio-assets';
@@ -90,7 +91,6 @@ export default function GameRuntimeProV4({missionId,mission,userId,initialCharac
   }
   function setLocal(next:Runtime){rr.current=next;setRuntime(next)}
   async function registerFact(f:any){if(!f?.id)return false;if(exploreMode){setDialog(null);setOverlay({type:'fact',fact:f,next:null,explore:true});return true}if(hasFact(f.id)){setDialog(null);return true}const next={...rr.current,facts:[...rr.current.facts,f.id]};const ok=await persist(next);if(!ok)return false;setLocal(next);setDialog(null);setOverlay({type:'fact',fact:f,next:currentObjective(next)});return true}
-  async function nextDbAttempt(decisionId:string){const{data,error}=await sb.current.from('decision_attempts').select('attempt_no').eq('user_id',userId).eq('mission_id',missionId).eq('decision_id',decisionId).order('attempt_no',{ascending:false}).limit(1).maybeSingle();if(error){console.error(error);return null}return Number(data?.attempt_no||0)+1}
   async function saveFeedbackState(fb:FeedbackOverlay){if(isPatrol)return true;const ok=await persist(fb.next);setOverlay({...fb,saved:ok,saveError:!ok});return ok}
   async function answer(d:any,i:number){
     if(decisionBusy)return;const c=d?.choices?.[i];if(!c)return;setDecisionBusy(true);setCloud('Registrando decisão…');
@@ -110,11 +110,11 @@ export default function GameRuntimeProV4({missionId,mission,userId,initialCharac
         setCloud(correct?'Decisão registrada':'Erro enviado para recuperação');
         return;
       }
-      const dbAttempt=await nextDbAttempt(d.id);if(!dbAttempt){setOverlay({type:'decisionError',d,message:'Não foi possível preparar o registro da tentativa. Tente novamente.'});setCloud('Falha ao registrar tentativa');return}
-      const correct=!!c.correct,wrong=!correct&&runAttempt===1&&!r.wrong.includes(d.id)?[...r.wrong,d.id]:r.wrong,base={...r,wrong,attemptCounts:{...r.attemptCounts,[d.id]:runAttempt}},next=correct?{...base,decisions:base.decisions.includes(d.id)?base.decisions:[...base.decisions,d.id]}:base;
-      const{error}=await sb.current.from('decision_attempts').insert({user_id:userId,mission_id:missionId,decision_id:d.id,attempt_no:dbAttempt,selected_index:i,selected_text:c.text,correct,mode:replayMode?'replay':'mission',feedback_snapshot:{...(d.feedback||{}),choice_feedback:c.feedback,choice_index:i,correct}});
-      if(error){console.error(error);setOverlay({type:'decisionError',d,message:'A tentativa não foi registrada. Nada foi perdido; clique para tentar novamente.'});setCloud('Falha ao registrar tentativa');return}
-      setLocal(next);const fb:FeedbackOverlay={type:'feedback',d,choice:c,choiceIndex:i,correct,next,saved:false};setOverlay(fb);setCloud(correct?'Resposta registrada • salvando…':'Erro registrado • salvando…');await saveFeedbackState(fb)
+      const response=await submitCampaignDecision({missionId,decisionId:d.id,index:i,mode:replayMode?'replay':'mission'});
+      if(!response.ok||!response.data){setOverlay({type:'decisionError',d,message:response.error||'A tentativa não foi registrada. Nada foi perdido; clique para tentar novamente.'});setCloud('Falha ao registrar tentativa');return}
+      const server=response.data,actualAttempt=Number(server.attemptNo||runAttempt),correct=!!server.correct,wrong=!correct&&actualAttempt===1&&!r.wrong.includes(d.id)?[...r.wrong,d.id]:r.wrong,base={...r,wrong,attemptCounts:{...r.attemptCounts,[d.id]:actualAttempt}},next=correct?{...base,decisions:base.decisions.includes(d.id)?base.decisions:[...base.decisions,d.id]}:base;
+      const serverDecision={...d,feedback:server.feedback||{}},serverChoice={...c,text:server.selectedText||c.text,feedback:server.feedback?.choice_feedback};
+      setLocal(next);const fb:FeedbackOverlay={type:'feedback',d:serverDecision,choice:serverChoice,choiceIndex:i,correct,next,saved:false};setOverlay(fb);setCloud(correct?'Resposta registrada • salvando…':'Erro registrado • salvando…');await saveFeedbackState(fb)
     }finally{setDecisionBusy(false)}
   }
   async function finish(){if(isPatrol){router.refresh();return}const r=rr.current,total=Math.max(1,(mission.decisions||[]).length),score=Math.max(0,Math.round((total-r.wrong.length)/total*100)),next={...r,completed:true};const ok=await persist(next,true,score);if(!ok)return;setLocal(next);setOverlay({type:'complete',score})}

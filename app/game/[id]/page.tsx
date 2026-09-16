@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import GameRuntime from '@/components/game-runtime-pro-v4';
 import GameCommercialLayer from '@/components/game-commercial-layer';
+import { missionForClient } from '@/lib/game/client-mission';
 
 export default async function Game({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ mode?: string; stage?: string }> }) {
   const { id } = await params;
@@ -20,6 +21,7 @@ export default async function Game({ params, searchParams }: { params: Promise<{
   if (error || !missionRow) notFound();
   const mission: any = missionRow.mission_json;
   if (!mission || mission.schema !== 'jurisquest.mission.v2') notFound();
+  const clientMission=missionForClient(mission);
 
   const [{ data: character }, { data: progress }, { data: runtimeSettings }, { data: visualPresets }] = await Promise.all([
     missionRow.syllabus_id
@@ -44,7 +46,7 @@ export default async function Game({ params, searchParams }: { params: Promise<{
     <GameRuntime
       mode="campaign"
       missionId={missionRow.id}
-      mission={mission}
+      mission={clientMission}
       userId={user.id}
       initialCharacter={initialCharacter}
       initialProgress={progress || null}

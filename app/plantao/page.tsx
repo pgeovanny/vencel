@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import PatrolMode from '@/components/patrol-mode-v4';
 import GameRuntime from '@/components/game-runtime-pro-v4';
 import GameCommercialLayer from '@/components/game-commercial-layer';
+import { missionForClient } from '@/lib/game/client-mission';
 
 type Search={run?:string;error?:string};
 
@@ -121,6 +122,8 @@ export default async function PlantaoPage({searchParams}:{searchParams:Promise<S
     sb.from('game_visual_presets').select('slug,name,config').eq('active',true).order('sort_order'),
   ]);
 
+  const clientRuntimeMission=missionForClient(runtimeMission);
+
   const initialCharacter=character||{
     character_name:user.user_metadata?.display_name||user.email?.split('@')[0]||'Jogador',
     role_title:syllabus?.position_name||'Candidato',
@@ -132,7 +135,7 @@ export default async function PlantaoPage({searchParams}:{searchParams:Promise<S
       key={item.id}
       mode="patrol"
       missionId={mission.id}
-      mission={runtimeMission}
+      mission={clientRuntimeMission}
       userId={user.id}
       initialCharacter={initialCharacter}
       initialProgress={null}
