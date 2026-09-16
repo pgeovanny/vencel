@@ -1,0 +1,89 @@
+name: JurisQuest Shared Product Navigation Patch
+
+on:
+  push:
+    branches: [jurisquest-commercial-20260916]
+
+permissions:
+  contents: write
+
+jobs:
+  patch-navigation:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jurisquest-commercial-20260916
+          fetch-depth: 0
+      - name: Apply shared product shell
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          g=Path('app/globals.css')
+          css=g.read_text()
+          marker='/* JQ_PRODUCT_NAV_V1 */'
+          assert marker not in css
+          css += r'''
+
+/* JQ_PRODUCT_NAV_V1 */
+.jqProductTop{height:68px;position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:22px;padding:0 clamp(14px,3vw,42px);border-bottom:1px solid var(--jq-line);background:#051116f2;backdrop-filter:blur(20px);box-shadow:0 10px 35px #0004}
+.jqProductBrand{font-size:18px;font-weight:950;letter-spacing:2.1px;white-space:nowrap}.jqProductBrand span{color:var(--jq-gold)}
+.jqProductTop nav{display:flex;gap:3px}.jqProductTop nav a{padding:9px 11px;border-radius:9px;color:#758c91;font-size:10px;font-weight:850;transition:.16s}.jqProductTop nav a:hover,.jqProductTop nav a.active{color:#f1f6f4;background:#0d2228}.jqProductTop nav a.active{box-shadow:inset 0 -2px 0 var(--jq-gold)}
+.jqProductState{margin-left:auto;display:flex;align-items:center;gap:7px;color:#6f858b;font:800 8px var(--jq-mono);letter-spacing:.08em;white-space:nowrap}.jqProductState i{width:6px;height:6px;border-radius:50%;background:var(--jq-green);box-shadow:0 0 12px var(--jq-green)}
+.jqProductBack{padding:8px 10px;border:1px solid #2d4b54;border-radius:9px;color:#9bb0b4;font-size:9px;font-weight:850;white-space:nowrap}.jqProductBack:hover{border-color:#55747d;color:#eef5f4;background:#0a2026}
+.jqProductMobileNav{display:none}
+@media(max-width:900px){.jqProductTop nav{display:none}.jqProductState{display:none}.jqProductTop{height:60px;padding:0 12px}.jqProductBack{margin-left:auto}.jqProductMobileNav{position:fixed;z-index:80;display:grid;grid-template-columns:repeat(5,1fr);left:8px;right:8px;bottom:max(8px,env(safe-area-inset-bottom));border:1px solid #2d4b54;border-radius:14px;background:#061217f2;backdrop-filter:blur(18px);box-shadow:0 16px 50px #000a;overflow:hidden}.jqProductMobileNav a{text-align:center;padding:11px 3px;color:#71888e;font-size:8px;font-weight:850}.jqProductMobileNav a.active{color:#f0ce71;background:#102027}}
+'''
+          g.write_text(css)
+
+          p=Path('app/profile/page.tsx');s=p.read_text()
+          old="import { saveCharacter } from './actions';"
+          new=old+"\nimport { ProductHeader, ProductMobileNav } from '@/components/product-navigation';"
+          assert old in s and 'product-navigation' not in s;s=s.replace(old,new,1)
+          old='''    <header className="profileTop"><a href="/dashboard" className="profileBrand">JURIS<span>QUEST</span></a><nav><a href="/dashboard">Início</a><a href="/plantao">Plantão</a><a href="/archive">Casos</a><a href="/review">Revisão</a></nav><a className="profileBack" href="/dashboard">← Painel</a></header>'''
+          new='''    <ProductHeader active="profile" syllabusId={active.id}/>'''
+          assert old in s;s=s.replace(old,new,1)
+          old='''    <nav className="profileMobileNav"><a href="/dashboard">Início</a><a href="/plantao">Plantão</a><a href="/archive">Casos</a><a href="/review">Revisão</a><a className="active" href="/profile">Perfil</a></nav>'''
+          new='''    <ProductMobileNav active="profile" syllabusId={active.id}/>'''
+          assert old in s;s=s.replace(old,new,1);p.write_text(s)
+
+          p=Path('app/review/page.tsx');s=p.read_text()
+          old="import { createClient } from '@/lib/supabase/server';"
+          new=old+"\nimport { ProductHeader, ProductMobileNav } from '@/components/product-navigation';"
+          assert old in s and 'product-navigation' not in s;s=s.replace(old,new,1)
+          old='''    <header className="memoryTop"><a href="/dashboard" className="memoryBrand">JURIS<span>QUEST</span></a><nav><a href="/dashboard">Central</a><a href="/plantao">Plantão</a><a href="/archive">Casos</a><a className="active" href="/review">Revisão</a></nav><div className="memoryStatus"><i/> SISTEMA DE MEMÓRIA ATIVO</div></header>'''
+          new='''    <ProductHeader active="review"/>'''
+          assert old in s;s=s.replace(old,new,1)
+          old='''    </div>\n    <style>{CSS}</style>'''
+          new='''    </div>\n    <ProductMobileNav active="review"/>\n    <style>{CSS}</style>'''
+          assert old in s;s=s.replace(old,new,1);p.write_text(s)
+
+          p=Path('app/archive/page.tsx');s=p.read_text()
+          old="import { createClient } from '@/lib/supabase/server';"
+          new=old+"\nimport { ProductHeader, ProductMobileNav } from '@/components/product-navigation';"
+          assert old in s and 'product-navigation' not in s;s=s.replace(old,new,1)
+          old='''    <header className="archiveTop"><a href="/dashboard" className="archiveBrand">JURIS<span>QUEST</span></a><nav><a href="/dashboard">Início</a><a href="/plantao">Plantão</a><a className="active" href="/archive">Casos</a><a href="/review">Revisão</a></nav><a className="archiveBack" href="/dashboard">← Painel</a></header>'''
+          new='''    <ProductHeader active="cases"/>'''
+          assert old in s;s=s.replace(old,new,1)
+          old='''    </section>\n    <style>{CSS}</style>'''
+          new='''    </section>\n    <ProductMobileNav active="cases"/>\n    <style>{CSS}</style>'''
+          assert old in s;s=s.replace(old,new,1);p.write_text(s)
+
+          p=Path('app/syllabus/[id]/page.tsx');s=p.read_text()
+          old="import { createClient } from '@/lib/supabase/server';"
+          new=old+"\nimport { ProductHeader, ProductMobileNav } from '@/components/product-navigation';"
+          assert old in s and 'product-navigation' not in s;s=s.replace(old,new,1)
+          old='''    <header className="territoryTop"><a href="/dashboard" className="territoryBrand">JURIS<span>QUEST</span></a><nav><a href="/dashboard">Central</a><a href="/plantao">Plantão</a><a href="/archive">Casos</a><a href="/review">Revisão</a><a className="active" href={`/syllabus/${id}`}>Edital</a></nav><a className="back" href="/dashboard">← Central</a></header>'''
+          new='''    <ProductHeader active="syllabus" syllabusId={id}/>'''
+          assert old in s;s=s.replace(old,new,1)
+          old='''    <style>{CSS}</style>\n  </main>;'''
+          new='''    <ProductMobileNav active="syllabus" syllabusId={id}/>\n    <style>{CSS}</style>\n  </main>;'''
+          assert old in s;s=s.replace(old,new,1);p.write_text(s)
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/globals.css app/profile/page.tsx app/review/page.tsx app/archive/page.tsx app/syllabus/'[id]'/page.tsx
+          git commit -m "refactor: unify product navigation across student surfaces"
+          git push origin HEAD:jurisquest-commercial-20260916
