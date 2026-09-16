@@ -3,101 +3,44 @@
 import { useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
-type Props={
-  review:{id:string;interval_days:number;reason?:string|null};
-  mission:{id:string;title:string;mission_json:any};
-  progress?:any;
-  userId:string;
-};
-
+type Props={review:{id:string;interval_days:number;reason?:string|null};mission:{id:string;title:string;mission_json:any};progress?:any;userId:string};
 type Phase='question'|'feedback'|'complete';
 
 export default function ReviewSession({review,mission,progress,userId}:Props){
   const sb=useRef(createClient());
   const weak=new Set<string>(Array.isArray(progress?.mistakes)?progress.mistakes:[]);
-  const questions=useMemo(()=>{
-    const all=[...(mission.mission_json?.decisions||[])];
-    all.sort((a:any,b:any)=>Number(weak.has(b.id))-Number(weak.has(a.id)));
-    return all.slice(0,5);
-  },[mission.mission_json]);
-  const [index,setIndex]=useState(0);
-  const [phase,setPhase]=useState<Phase>('question');
-  const [choice,setChoice]=useState<any>(null);
-  const [choiceIndex,setChoiceIndex]=useState<number|null>(null);
-  const [serverFeedback,setServerFeedback]=useState<any>({});
-  const [busy,setBusy]=useState(false);
-  const [firstMisses,setFirstMisses]=useState<string[]>([]);
-  const [error,setError]=useState('');
-  const [xp,setXp]=useState(0);
-  const q=questions[index];
+  const questions=useMemo(()=>{const all=[...(mission.mission_json?.decisions||[])];all.sort((a:any,b:any)=>Number(weak.has(b.id))-Number(weak.has(a.id)));return all.slice(0,5)},[mission.mission_json]);
+  const[index,setIndex]=useState(0);const[phase,setPhase]=useState<Phase>('question');const[choice,setChoice]=useState<any>(null);const[choiceIndex,setChoiceIndex]=useState<number|null>(null);const[serverFeedback,setServerFeedback]=useState<any>({});const[busy,setBusy]=useState(false);const[firstMisses,setFirstMisses]=useState<string[]>([]);const[error,setError]=useState('');const[xp,setXp]=useState(0);const q=questions[index];
 
-  async function answer(i:number){
-    if(busy||!q)return;
-    setBusy(true);setError('');
-    try{
-      const c=q.choices?.[i];
-      if(!c)return;
-      const {data,error:rpcError}=await sb.current.rpc('submit_decision_attempt_v1',{
-        p_mission_id:mission.id,
-        p_decision_id:q.id,
-        p_selected_index:i,
-        p_mode:'review',
-        p_review_id:review.id,
-      });
-      if(rpcError)throw rpcError;
-      const correct=Boolean(data?.correct);
-      const feedback=data?.feedback||{};
-      if(!correct&&!firstMisses.includes(q.id))setFirstMisses(v=>[...v,q.id]);
-      setChoice({...c,correct,feedback:feedback.choice_feedback||''});
-      setChoiceIndex(i);
-      setServerFeedback(feedback);
-      setPhase('feedback');
-    }catch(e:any){setError(e?.message||'Não foi possível registrar a resposta. Tente novamente.');}
-    finally{setBusy(false)}
-  }
+  async function answer(i:number){if(busy||!q)return;setBusy(true);setError('');try{const c=q.choices?.[i];if(!c)return;const{data,error:rpcError}=await sb.current.rpc('submit_decision_attempt_v1',{p_mission_id:mission.id,p_decision_id:q.id,p_selected_index:i,p_mode:'review',p_review_id:review.id});if(rpcError)throw rpcError;const correct=Boolean(data?.correct),feedback=data?.feedback||{};if(!correct&&!firstMisses.includes(q.id))setFirstMisses(v=>[...v,q.id]);setChoice({...c,correct,feedback:feedback.choice_feedback||''});setChoiceIndex(i);setServerFeedback(feedback);setPhase('feedback')}catch(e:any){setError(e?.message||'Não foi possível registrar a resposta. Tente novamente.')}finally{setBusy(false)}}
+  async function advance(){if(!choice)return;if(!choice.correct){setChoice(null);setChoiceIndex(null);setServerFeedback({});setPhase('question');return}if(index<questions.length-1){setIndex(v=>v+1);setChoice(null);setChoiceIndex(null);setServerFeedback({});setPhase('question');return}setBusy(true);setError('');try{const{data,error}=await sb.current.rpc('complete_review',{p_review_id:review.id,p_quality:3});if(error)throw error;setXp(Number(data?.xp||0));setPhase('complete')}catch(e:any){setError(e?.message||'A revisão foi respondida, mas não foi possível concluí-la.')}finally{setBusy(false)}}
 
-  async function advance(){
-    if(!choice)return;
-    if(!choice.correct){setChoice(null);setChoiceIndex(null);setServerFeedback({});setPhase('question');return;}
-    if(index<questions.length-1){setIndex(v=>v+1);setChoice(null);setChoiceIndex(null);setServerFeedback({});setPhase('question');return;}
-    setBusy(true);setError('');
-    try{
-      const {data,error}=await sb.current.rpc('complete_review',{p_review_id:review.id,p_quality:3});
-      if(error)throw error;
-      setXp(Number(data?.xp||0));setPhase('complete');
-    }catch(e:any){setError(e?.message||'A revisão foi respondida, mas não foi possível concluí-la.');}
-    finally{setBusy(false)}
-  }
+  if(!questions.length)return <main className="recoveryEmpty"><section><small>RECUPERAÇÃO INDISPONÍVEL</small><h1>Este caso não possui decisões revisáveis.</h1><p>Volte à Central de Revisão e escolha outra recuperação.</p><a href="/review">Voltar</a></section><style jsx global>{CSS}</style></main>;
 
-  if(!questions.length)return <main className="shell"><section className="card center"><div className="ey">REVISÃO</div><h1>Sem decisões nesta missão</h1><p className="muted">Esta missão ainda não possui decisões compatíveis com a revisão rápida.</p><a className="btn" href="/review">Voltar</a></section></main>;
+  if(phase==='complete')return <main className="recoveryComplete"><div className="completeRings"><i/><i/><i/></div><section><small>MEMÓRIA RECUPERADA</small><h1>{mission.title}</h1><p>As decisões esperadas foram recuperadas e validadas pelo servidor.</p><div className="reward"><strong>+{xp}</strong><span>XP</span><b>{firstMisses.length===0?'RECUPERAÇÃO PERFEITA':`${firstMisses.length} PONTO(S) EXIGIRAM NOVA TENTATIVA`}</b></div><div className="doneActions"><a className="primary" href="/review">Próxima recuperação</a><a href="/plantao">Plantão</a><a href="/dashboard">Central</a></div></section><style jsx global>{CSS}</style></main>;
 
-  if(phase==='complete')return <main className="shell"><section className="card center reviewDone"><div className="ey">REVISÃO CONCLUÍDA</div><h1>Conteúdo recuperado</h1><p className="muted">Você recuperou ativamente as regras desta missão. Qualidade e XP foram calculados no servidor.</p><div className="reviewReward"><strong>+{xp} XP</strong><span>{firstMisses.length===0?'Revisão perfeita':`${firstMisses.length} ponto(s) precisaram de nova tentativa`}</span></div><div className="row"><a className="btn primary" href="/review">Próxima revisão</a><a className="btn" href="/plantao">Ir para o Plantão</a><a className="btn" href="/dashboard">Voltar ao painel</a></div></section><style jsx global>{CSS}</style></main>;
+  const feedback=serverFeedback||{};const pct=((index+(phase==='feedback'&&choice?.correct?1:0))/questions.length)*100;const isWeak=weak.has(q.id);
+  return <main className={`recoveryRun ${phase==='feedback'?(choice?.correct?'stateOk':'stateBad'):''}`}>
+    <header className="recoveryTop"><a href="/review" className="recoveryBrand">JURIS<span>QUEST</span></a><div className="runTitle"><small>RECUPERAÇÃO {review.interval_days}D</small><b>{mission.title}</b></div><div className="runCount"><strong>{index+1}</strong><span>/ {questions.length}</span></div><a className="runExit" href="/review">Encerrar</a></header>
+    <div className="recoveryProgress"><i style={{width:`${pct}%`}}/></div>
 
-  const wrong=phase==='feedback'&&!choice?.correct;
-  const feedback=serverFeedback||{};
-  return <main className="reviewShell">
-    <header className="reviewTop"><div><div className="ey">REVISÃO {review.interval_days}D • ACTIVE RECALL</div><h1>{mission.title}</h1></div><div className="reviewCounter">{index+1}<span>/ {questions.length}</span></div></header>
-    <section className="reviewProgress"><i style={{width:`${((index+(phase==='feedback'&&choice?.correct?1:0))/questions.length)*100}%`}}/></section>
-    <section className="reviewCard">
-      {weak.has(q.id)&&<span className="weakTag">PONTO FRACO PRIORIZADO</span>}
-      <div className="ey">{q.title||'DECISÃO'}</div>
-      <h2>{q.question}</h2>
-      <p className="recallHint">Formule a resposta mentalmente antes de escolher. O gabarito não é enviado ao navegador.</p>
-      {phase==='question'&&<div className="reviewChoices">{(q.choices||[]).map((c:any,i:number)=><button key={i} disabled={busy} onClick={()=>void answer(i)}><span>{String.fromCharCode(65+i)}</span><b>{c.text}</b></button>)}</div>}
-      {phase==='feedback'&&<>
-        <div className={`reviewFeedback ${choice?.correct?'ok':'bad'}`}><strong>{choice?.correct?'Correto. Consolide o raciocínio.':'Ainda não. O erro virou material de revisão.'}</strong><p>{choice?.feedback||'Revise a regra abaixo.'}</p></div>
-        <div className="reviewExplain">
-          {feedback.rule&&<Info title="REGRA" text={feedback.rule}/>} 
-          {feedback.application&&<Info title="APLICAÇÃO" text={feedback.application}/>} 
-          {feedback.legal_basis&&<Info title="BASE LEGAL" text={feedback.legal_basis}/>} 
-          {feedback.trap&&<Info title="PEGADINHA" text={feedback.trap}/>} 
-          {feedback.memory&&<Info title="MEMÓRIA DE PROVA" text={feedback.memory} wide/>}
-        </div>
-        <button className="btn primary" disabled={busy} onClick={()=>void advance()}>{choice?.correct?(index===questions.length-1?'Concluir revisão':'Próxima questão'):'Tentar novamente'}</button>
-      </>}
-      {error&&<p className="error" style={{marginTop:12}}>{error}</p>}
+    <section className="recoveryStage">
+      <aside className="memoryTelemetry"><div className="signalOrb"><i/><span>{index+1}</span></div><small>ESTADO DA MEMÓRIA</small><strong>{phase==='question'?'RECUPERAÇÃO ATIVA':choice?.correct?'CONSOLIDADA':'INSTÁVEL'}</strong><p>{isWeak?'Este ponto foi priorizado porque já gerou erro.':'Recupere a regra sem consultar o gabarito.'}</p><div className="telemetryStats"><span><b>{firstMisses.length}</b> erros nesta sessão</span><span><b>{questions.length-index}</b> decisões restantes</span></div></aside>
+
+      <article className="recallConsole">
+        <div className="consoleHeader"><div><small>{isWeak?'PONTO FRACO PRIORIZADO':'DECISÃO EM RECUPERAÇÃO'}</small><span>{q.title||'Decisão jurídica'}</span></div><b>{String(index+1).padStart(2,'0')}</b></div>
+        <h1>{q.question}</h1>
+        {phase==='question'&&<><p className="recallInstruction">Reconstrua mentalmente a regra antes de escolher. O gabarito é resolvido no servidor somente depois da sua decisão.</p><div className="recallChoices">{(q.choices||[]).map((c:any,i:number)=><button key={i} disabled={busy} onClick={()=>void answer(i)}><span>{String.fromCharCode(65+i)}</span><b>{c.text}</b><em>{busy?'AGUARDE':'DECIDIR'}</em></button>)}</div></>}
+
+        {phase==='feedback'&&<div className="feedbackSequence">
+          <section className={`verdict ${choice?.correct?'ok':'bad'}`}><div>{choice?.correct?'✓':'!'}</div><span><small>{choice?.correct?'DECISÃO RECUPERADA':'RECUPERAÇÃO INCOMPLETA'}</small><b>{choice?.correct?'A regra voltou à memória':'Reconstrua o raciocínio antes da nova tentativa'}</b><p>{choice?.feedback||'Use os elementos abaixo para corrigir o modelo mental.'}</p></span></section>
+          <div className="explainGrid">{feedback.rule&&<Info title="01 • REGRA" text={feedback.rule}/>} {feedback.application&&<Info title="02 • APLICAÇÃO" text={feedback.application}/>} {feedback.legal_basis&&<Info title="03 • BASE LEGAL" text={feedback.legal_basis}/>} {feedback.trap&&<Info title="04 • ARMADILHA DE PROVA" text={feedback.trap}/>} {feedback.memory&&<Info title="05 • MEMÓRIA DE PROVA" text={feedback.memory} wide/>}</div>
+          <button className="advanceRecovery" disabled={busy} onClick={()=>void advance()}>{choice?.correct?(index===questions.length-1?'Concluir recuperação':'Próxima decisão'):'Tentar novamente'} <span>→</span></button>
+        </div>}
+        {error&&<div className="recoveryError">{error}</div>}
+      </article>
     </section>
-    <footer className="reviewFoot"><span>Erros nesta sessão: {firstMisses.length}</span><a href="/review">Sair da revisão</a></footer>
+    <footer className="recoveryFoot"><span>Servidor confiável • sem gabarito antecipado</span><span>{review.reason||'Revisão programada'}</span></footer>
     <style jsx global>{CSS}</style>
   </main>;
 }
@@ -105,5 +48,5 @@ export default function ReviewSession({review,mission,progress,userId}:Props){
 function Info({title,text,wide=false}:{title:string;text:string;wide?:boolean}){return <article className={wide?'wide':''}><small>{title}</small><p>{text}</p></article>}
 
 const CSS=`
-.reviewShell{min-height:100vh;background:radial-gradient(circle at 70% 0,#12313b 0,transparent 38%),#061116;color:#eef5f4;padding:28px;box-sizing:border-box;font-family:Inter,system-ui,sans-serif}.reviewTop{max-width:900px;margin:0 auto;display:flex;justify-content:space-between;align-items:end}.reviewTop h1{margin:5px 0 0;font-size:30px}.reviewCounter{font-size:30px;font-weight:900;color:#edc95f}.reviewCounter span{font-size:14px;color:#82969b}.reviewProgress{max-width:900px;height:7px;margin:16px auto 20px;border-radius:99px;background:#0b2027;overflow:hidden}.reviewProgress i{display:block;height:100%;background:linear-gradient(90deg,#56d6e7,#e6c35c);transition:width .25s}.reviewCard{max-width:900px;margin:auto;padding:28px;border:1px solid #31545f;border-radius:22px;background:linear-gradient(180deg,#0c222a,#08191f);box-shadow:0 30px 100px #0008}.reviewCard h2{font-size:25px;line-height:1.3;margin:8px 0}.recallHint{color:#8ea4a8;font-size:12px}.weakTag{float:right;border:1px solid #9b7a3d;border-radius:99px;padding:5px 8px;color:#f0d579;font:800 9px ui-monospace}.reviewChoices{display:grid;gap:10px;margin-top:20px}.reviewChoices button{display:grid;grid-template-columns:42px 1fr;gap:12px;align-items:center;text-align:left;padding:14px;border:1px solid #335864;border-radius:14px;background:#0a2630;color:#eef5f4;cursor:pointer}.reviewChoices button:hover{border-color:#6bddeb;background:#0d303b}.reviewChoices span{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:#113a47;color:#efca60;font-weight:900}.reviewFeedback{margin:18px 0;padding:16px;border-radius:14px}.reviewFeedback.ok{background:#0c2b1e;border:1px solid #4d8b68}.reviewFeedback.bad{background:#2c1918;border:1px solid #97534f}.reviewFeedback p{margin:7px 0 0;color:#d3dddd}.reviewExplain{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:15px}.reviewExplain article{padding:13px;border:1px solid #2d4e59;border-radius:12px;background:#071920}.reviewExplain article.wide{grid-column:1/-1}.reviewExplain small{color:#69d9e9;font:850 9px ui-monospace}.reviewExplain p{font-size:12px;line-height:1.55;margin:6px 0 0;color:#c8d3d4}.reviewFoot{max-width:900px;margin:14px auto;display:flex;justify-content:space-between;color:#7f959a;font-size:11px}.reviewFoot a{color:#80d9e4}.reviewDone{max-width:620px}.reviewReward{display:grid;gap:4px;margin:18px 0;padding:18px;border:1px solid #826e35;border-radius:14px;background:#262214}.reviewReward strong{font-size:30px;color:#efca60}.reviewReward span{color:#aebabc}@media(max-width:700px){.reviewShell{padding:16px}.reviewCard{padding:18px}.reviewExplain{grid-template-columns:1fr}.reviewExplain article.wide{grid-column:auto}.reviewTop h1{font-size:23px}}
+.recoveryRun,.recoveryComplete,.recoveryEmpty{min-height:100vh;background:#02080b;color:#edf4f3;font-family:Inter,system-ui,sans-serif}.recoveryRun:before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(circle at 18% 50%,#174f5b38,transparent 30%),radial-gradient(circle at 80% 22%,#5949151d,transparent 28%),repeating-linear-gradient(90deg,transparent 0 79px,#14323a0d 80px)}.recoveryTop{height:70px;position:relative;z-index:5;display:grid;grid-template-columns:auto 1fr auto auto;gap:15px;align-items:center;padding:0 22px;border-bottom:1px solid #24434c;background:#051116ef;backdrop-filter:blur(16px)}.recoveryBrand{font-weight:950;letter-spacing:1.8px}.recoveryBrand span{color:#e1bb57}.runTitle{display:grid;padding-left:8px;border-left:1px solid #31505a}.runTitle small{font:900 7px ui-monospace;color:#66d1dc;letter-spacing:.12em}.runTitle b{font-size:11px;margin-top:2px}.runCount{display:flex;align-items:baseline;color:#e2bf5c}.runCount strong{font-size:25px}.runCount span{font-size:11px;color:#71898f}.runExit{padding:8px 10px;border:1px solid #31505a;border-radius:8px;color:#869ca1;font-size:8px;font-weight:850}.recoveryProgress{height:4px;background:#071b21;position:relative;z-index:5}.recoveryProgress i{display:block;height:100%;background:linear-gradient(90deg,#5bd4e2,#e0bc58);transition:width .3s}.recoveryStage{position:relative;z-index:2;display:grid;grid-template-columns:260px minmax(0,830px);gap:14px;justify-content:center;padding:48px 18px 30px}.memoryTelemetry{min-height:520px;border:1px solid #294851;border-radius:18px;background:linear-gradient(180deg,#081b21,#051216);padding:22px;display:flex;flex-direction:column;align-items:center;text-align:center;box-shadow:0 25px 70px #0006}.signalOrb{width:160px;height:160px;border-radius:50%;display:grid;place-items:center;position:relative;margin:18px 0 32px;border:1px solid #5acbdb55;background:radial-gradient(circle,#164c58,#07171c 63%);box-shadow:0 0 0 12px #5acbdb08,0 0 70px #5acbdb1c}.signalOrb i{position:absolute;inset:19px;border:1px solid #62d5e362;border-radius:50%;animation:signalSpin 8s linear infinite}.signalOrb i:after{content:"";position:absolute;left:50%;top:-4px;width:8px;height:8px;border-radius:50%;background:#e1bd58;box-shadow:0 0 16px #e1bd58}.signalOrb span{font-size:40px;font-weight:950;color:#e4c15d}.memoryTelemetry>small{font:900 7px ui-monospace;letter-spacing:.13em;color:#65d0dc}.memoryTelemetry>strong{font-size:14px;margin:6px 0}.memoryTelemetry>p{font-size:9px;line-height:1.55;color:#758e93}.telemetryStats{width:100%;margin-top:auto;display:grid;gap:6px}.telemetryStats span{padding:9px;border:1px solid #25434b;border-radius:9px;background:#061519;font-size:8px;color:#7e9599}.telemetryStats b{color:#e3bf5d}.recallConsole{border:1px solid #31535d;border-radius:20px;background:radial-gradient(circle at 100% 0,#153f4a 0,transparent 29%),linear-gradient(180deg,#0a2027,#061419);padding:28px 30px;box-shadow:0 32px 100px #0008}.consoleHeader{display:flex;justify-content:space-between;align-items:start}.consoleHeader>div{display:grid}.consoleHeader small{font:900 8px ui-monospace;letter-spacing:.12em;color:#66d1dc}.consoleHeader span{font-size:10px;color:#859ba0;margin-top:4px}.consoleHeader>b{font:950 46px/1 ui-monospace;color:#68d5e810}.recallConsole>h1{font-size:29px;line-height:1.28;letter-spacing:-.6px;margin:24px 0 9px;max-width:760px}.recallInstruction{font-size:10px;line-height:1.55;color:#80979c;margin-bottom:22px}.recallChoices{display:grid;gap:9px}.recallChoices button{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;text-align:left;padding:12px;border:1px solid #31525c;border-radius:12px;background:#071b21;color:#edf4f3;cursor:pointer;transition:.15s}.recallChoices button:hover:not(:disabled){border-color:#70d2dd;background:#0a2830;transform:translateX(3px)}.recallChoices button>span{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;background:#123640;color:#e5c15c;font-weight:950}.recallChoices button>b{font-size:11px;line-height:1.4}.recallChoices button>em{font-style:normal;font:850 7px ui-monospace;color:#6f8990}.feedbackSequence{margin-top:20px}.verdict{display:grid;grid-template-columns:54px 1fr;gap:13px;padding:15px;border-radius:13px}.verdict>div{width:50px;height:50px;border-radius:50%;display:grid;place-items:center;font-size:25px;font-weight:950}.verdict span{display:grid}.verdict small{font:900 8px ui-monospace;letter-spacing:.1em}.verdict b{font-size:15px;margin:3px 0}.verdict p{font-size:10px;line-height:1.5;margin:0}.verdict.ok{border:1px solid #4d8064;background:#0b291d}.verdict.ok>div{border:1px solid #5f9b79;background:#123728;color:#8ae3b3}.verdict.ok small{color:#78dba5}.verdict.bad{border:1px solid #89524d;background:#281716}.verdict.bad>div{border:1px solid #9c5b55;background:#381c1b;color:#ef9d95}.verdict.bad small{color:#ef9d95}.explainGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.explainGrid article{padding:13px;border:1px solid #2c4b54;border-radius:11px;background:#06171d}.explainGrid article.wide{grid-column:1/-1;border-color:#695b35;background:#17160e}.explainGrid small{font:900 7px ui-monospace;color:#67d2dd;letter-spacing:.09em}.explainGrid p{font-size:11px;line-height:1.62;color:#c9d4d5;margin:6px 0 0}.advanceRecovery{width:100%;margin-top:11px;padding:13px;border:1px solid #d0a946;border-radius:10px;background:linear-gradient(#e7c563,#bc9137);color:#171309;font-weight:950;cursor:pointer}.advanceRecovery span{margin-left:7px}.recoveryError{margin-top:10px;padding:10px;border:1px solid #87504a;border-radius:9px;background:#281716;color:#efa8a1;font-size:9px}.recoveryFoot{position:relative;z-index:2;display:flex;justify-content:space-between;max-width:1104px;margin:0 auto;padding:0 18px 25px;font:750 7px ui-monospace;color:#526d74}.stateOk:before{background:radial-gradient(circle at 18% 50%,#1b624733,transparent 30%),radial-gradient(circle at 80% 22%,#5949151d,transparent 28%)}.stateBad:before{background:radial-gradient(circle at 18% 50%,#5a2b2833,transparent 30%),radial-gradient(circle at 80% 22%,#5949151d,transparent 28%)}.recoveryComplete,.recoveryEmpty{display:grid;place-items:center;position:relative;overflow:hidden;background:radial-gradient(circle at 50% 42%,#174f4635,transparent 35%),#02080b}.recoveryComplete>section,.recoveryEmpty>section{position:relative;z-index:2;width:min(620px,calc(100vw - 30px));text-align:center;padding:35px;border:1px solid #31544e;border-radius:20px;background:#071817e9;box-shadow:0 35px 100px #000a}.recoveryComplete small,.recoveryEmpty small{font:900 8px ui-monospace;letter-spacing:.14em;color:#72d6a0}.recoveryComplete h1,.recoveryEmpty h1{font-size:31px;margin:8px 0}.recoveryComplete p,.recoveryEmpty p{font-size:10px;color:#84999d;line-height:1.55}.completeRings{position:absolute;width:700px;height:700px;border-radius:50%;border:1px solid #5ed3a21a}.completeRings i{position:absolute;inset:80px;border:1px solid #5ed3a21a;border-radius:50%;animation:completePulse 4s infinite}.completeRings i:nth-child(2){inset:160px;animation-delay:-1.3s}.completeRings i:nth-child(3){inset:240px;animation-delay:-2.6s}.reward{display:grid;place-items:center;margin:22px auto;padding:17px;border:1px solid #6d6038;border-radius:14px;background:#19190f}.reward strong{font-size:45px;color:#e5c15c}.reward span{font:900 8px ui-monospace;color:#e5c15c}.reward b{font:800 8px ui-monospace;color:#8da19d;margin-top:8px}.doneActions{display:flex;justify-content:center;gap:7px;flex-wrap:wrap}.doneActions a,.recoveryEmpty a{padding:10px 12px;border:1px solid #31505a;border-radius:9px;color:#9fb2b5;font-size:9px;font-weight:850}.doneActions a.primary,.recoveryEmpty a{border-color:#b79643;background:#2a2412;color:#eed47e}@keyframes signalSpin{to{transform:rotate(360deg)}}@keyframes completePulse{0%,100%{transform:scale(.95);opacity:.35}50%{transform:scale(1.03);opacity:1}}@media(max-width:850px){.recoveryStage{grid-template-columns:1fr;padding-top:20px}.memoryTelemetry{min-height:auto;display:grid;grid-template-columns:100px 1fr;text-align:left;gap:8px;align-items:center}.signalOrb{width:90px;height:90px;grid-row:1/5;margin:0}.signalOrb span{font-size:26px}.telemetryStats{grid-column:1/-1;grid-template-columns:1fr 1fr}.recallConsole{padding:20px}.recoveryTop{grid-template-columns:auto 1fr auto}.runCount{display:none}.explainGrid{grid-template-columns:1fr}.explainGrid article.wide{grid-column:auto}}@media(max-width:560px){.recoveryTop{padding:0 10px}.runTitle b{max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.recoveryStage{padding:12px 8px}.memoryTelemetry{display:none}.recallConsole{padding:16px}.recallConsole>h1{font-size:22px}.recallChoices button{grid-template-columns:38px 1fr}.recallChoices button>em{display:none}.recoveryFoot{display:none}}
 `;
