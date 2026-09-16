@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import VisualStudio from '@/components/admin/visual-studio';
+import AssetLibrary from '@/components/admin/asset-library';
 
 export default async function VisualAdmin() {
   const sb = await createClient();
@@ -16,5 +17,8 @@ export default async function VisualAdmin() {
     sb.from('game_runtime_settings').select('*').eq('id', 1).maybeSingle(),
   ]);
 
-  return <VisualStudio presets={presets || []} assets={assets || []} missions={missions || []} runtimeSettings={runtimeSettings || null} />;
+  return <>
+    <VisualStudio presets={presets || []} assets={assets || []} missions={missions || []} runtimeSettings={runtimeSettings || null} />
+    <AssetLibrary presets={presets || []} assets={assets || []}/>
+  </>;
 }
