@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 
-const ALLOWED=new Set(['operational','investigator','analyst','institutional']);
+const ALLOWED=new Set(['operational','investigator','analyst','formal']);
 
 export async function saveCharacter(formData:FormData){
   const sb=await createClient();
