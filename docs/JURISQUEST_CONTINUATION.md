@@ -30,6 +30,7 @@ Production authority: current Vercel production remains untouched until explicit
 - Visual Studio settings change the real V4 runtime: preset, time, weather, density, particles, fog, vignette and camera zoom.
 - Runtime has movement game-feel polish: walk/idle motion, target pulse, arrival feedback and modal/feedback transitions.
 - Automatic click-to-target movement is being converted from frame-rate-dependent Arcade velocity to a timed interpolation target of roughly 0.7–2.6 seconds; WASD remains physical/optional.
+- Last browser QA before the deterministic patch completed the first objective correctly but measured 22.905s click-to-interaction, proving the old velocity approach is not acceptable for commercial pacing.
 - The deterministic movement patch workflow/script is staged and must be removed after the generated runtime commit lands.
 - Visual Studio previews use real procedural scene and character assets.
 - `components/admin/asset-library.tsx` lets the admin define HTTPS artwork overrides without code changes.
