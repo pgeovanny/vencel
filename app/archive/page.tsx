@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { ProductHeader, ProductMobileNav } from '@/components/product-navigation';
 
 export default async function ArchivePage(){
   const sb=await createClient();
@@ -8,28 +9,24 @@ export default async function ArchivePage(){
 
   const [{data:progress},{data:missions}]=await Promise.all([
     sb.from('mission_progress').select('mission_id,status,score_first_try,score_best,completed_at').eq('user_id',user.id).eq('status','completed').order('completed_at',{ascending:false}),
-    sb.from('missions').select('id,title,summary,sequence_no,mission_json,syllabus_id').eq('status','published').order('sequence_no')
+    sb.from('missions_client').select('id,title,summary,sequence_no,mission_json,syllabus_id').eq('status','published').order('sequence_no')
   ]);
   const done=new Map((progress||[]).map((p:any)=>[p.mission_id,p]));
   const completed=(missions||[]).filter((m:any)=>done.has(m.id));
 
-  return <main className="shell">
-    <section className="card">
-      <div className="ey">ARQUIVO DE CASOS</div>
-      <h1>Missões concluídas</h1>
-      <p className="muted">Revisite qualquer cenário já concluído. No modo exploração você pode circular, conversar com NPCs e rever evidências sem alterar nota, XP ou conclusão.</p>
-      <div className="row"><a className="btn" href="/dashboard">Voltar à campanha</a></div>
+  return <main className="caseArchive">
+    <ProductHeader active="cases"/>
+    <section className="archiveContent">
+      <section className="archiveHero"><div><div className="archiveEy">ARQUIVO DE CASOS</div><h1>Casos concluídos</h1><p>Revisite cenas, depoimentos e evidências sem alterar o resultado original. Use o arquivo como memória visual do que você já enfrentou.</p></div><div className="archiveCount"><small>CASOS ARQUIVADOS</small><strong>{completed.length}</strong><span>disponíveis para exploração</span></div></section>
+
+      {completed.length===0&&<section className="archiveEmpty"><div>⌁</div><h2>Nenhum caso arquivado</h2><p>Conclua sua primeira missão para liberar exploração e repetição.</p><a href="/dashboard">Escolher um caso</a></section>}
+
+      <section className="dossierGrid">{completed.map((m:any)=>{const p:any=done.get(m.id);const stages=[...(m.mission_json?.stages||[])].sort((a:any,b:any)=>(a.order||0)-(b.order||0));return <article className="dossier" key={m.id}><div className="dossierIndex">{String(m.sequence_no||'').padStart(2,'0')}</div><div className="dossierStatus">CASO CONCLUÍDO</div><h2>{m.title}</h2><p>{m.summary}</p><div className="dossierScores"><span><small>1ª TENTATIVA</small><b>{p?.score_first_try!=null?`${Number(p.score_first_try)}%`:'—'}</b></span><span><small>MELHOR RESULTADO</small><b>{p?.score_best!=null?`${Number(p.score_best)}%`:'—'}</b></span><span><small>CENAS</small><b>{stages.length}</b></span></div><div className="sceneList">{stages.map((s:any,i:number)=><a key={s.id} href={`/game/${m.id}?mode=explore&stage=${encodeURIComponent(s.id)}`}><span>{String(i+1).padStart(2,'0')}</span><div><b>{s.title||`Cena ${i+1}`}</b><small>{s.location||'Cenário investigativo'}</small></div><i>Explorar →</i></a>)}</div><div className="dossierActions"><a className="primary" href={`/game/${m.id}?mode=explore`}>Explorar missão</a><a href={`/game/${m.id}?mode=replay`}>Refazer caso</a></div></article>})}</section>
     </section>
-    <section className="grid" style={{marginTop:12}}>
-      {completed.length===0&&<article className="card"><h2>Nenhum caso arquivado</h2><p className="muted">Conclua sua primeira missão para liberar a exploração livre.</p></article>}
-      {completed.map((m:any)=>{const p:any=done.get(m.id);const stages=[...(m.mission_json?.stages||[])].sort((a:any,b:any)=>(a.order||0)-(b.order||0));return <article className="card" key={m.id}>
-        <span className="tag">CASO CONCLUÍDO</span>
-        <h2 style={{marginTop:12}}>{m.title}</h2>
-        <p className="muted">{m.summary}</p>
-        <p className="muted" style={{fontSize:11}}>Primeira tentativa: {p?.score_first_try!=null?`${Number(p.score_first_try)}%`:'—'} • melhor resultado: {p?.score_best!=null?`${Number(p.score_best)}%`:'—'}</p>
-        <div style={{display:'grid',gap:8,marginTop:14}}>{stages.map((s:any,i:number)=><a className="btn" key={s.id} href={`/game/${m.id}?mode=explore&stage=${encodeURIComponent(s.id)}`}><b>{i+1}. {s.title||s.location||`Cena ${i+1}`}</b>{s.location&&<span style={{marginLeft:8,opacity:.7}}>{s.location}</span>}</a>)}</div>
-        <div className="row" style={{marginTop:12}}><a className="btn primary" href={`/game/${m.id}?mode=explore`}>Explorar missão</a><a className="btn" href={`/game/${m.id}?mode=replay`}>Refazer missão</a></div>
-      </article>})}
-    </section>
+    <ProductMobileNav active="cases"/>
+    <style>{CSS}</style>
   </main>;
 }
+
+const CSS=`
+.caseArchive{min-height:100vh;background:radial-gradient(circle at 80% -12%,#173f48 0,transparent 31%),#050d11;color:#edf4f3;font-family:Inter,ui-sans-serif,system-ui}.archiveTop{height:68px;position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:27px;padding:0 clamp(18px,4vw,58px);border-bottom:1px solid #1d343c;background:#071216ed;backdrop-filter:blur(18px)}.archiveBrand{font-size:18px;font-weight:950;letter-spacing:2px}.archiveBrand span{color:#e4bb58}.archiveTop nav{display:flex;gap:4px}.archiveTop nav a,.archiveBack{padding:9px 11px;border-radius:9px;color:#7f969b;font-size:11px;font-weight:800}.archiveTop nav a:hover,.archiveTop nav a.active{color:#eef5f4;background:#0d2229}.archiveBack{margin-left:auto;border:1px solid #2e4a52}.archiveContent{max-width:1320px;margin:auto;padding:26px clamp(14px,3vw,38px) 70px}.archiveHero{display:grid;grid-template-columns:1fr 230px;gap:20px;align-items:end;padding:31px;border:1px solid #33515a;border-radius:22px;background:radial-gradient(circle at 82% 0,#684f2029 0,transparent 27%),radial-gradient(circle at 4% 0,#164957 0,transparent 34%),linear-gradient(135deg,#0c2229,#07161b);box-shadow:0 25px 80px #0005}.archiveEy{font:900 9px ui-monospace;color:#68d7e1;letter-spacing:.15em}.archiveHero h1{font-size:43px;letter-spacing:-.045em;margin:8px 0 8px}.archiveHero p{max-width:760px;margin:0;color:#91a5a9;font-size:13px;line-height:1.65}.archiveCount{padding:17px;border-left:1px solid #38525a}.archiveCount small,.archiveCount strong,.archiveCount span{display:block}.archiveCount small{font:850 8px ui-monospace;color:#e4bd58}.archiveCount strong{font-size:42px;margin:3px 0}.archiveCount span{font-size:9px;color:#789096}.dossierGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin-top:14px}.dossier{position:relative;overflow:hidden;padding:24px;border:1px solid #2e4a52;border-radius:18px;background:linear-gradient(180deg,#0b2026,#071519);box-shadow:0 20px 60px #0004}.dossier:before{content:"";position:absolute;right:-80px;top:-80px;width:230px;height:230px;border-radius:50%;background:#1e718026;filter:blur(30px)}.dossierIndex{position:absolute;right:21px;top:15px;font:950 58px/1 ui-monospace;color:#6fd8e812}.dossierStatus{position:relative;z-index:1;display:inline-flex;padding:5px 8px;border:1px solid #426256;border-radius:999px;background:#0b211a;color:#80d2a1;font:850 7px ui-monospace;letter-spacing:.09em}.dossier h2{position:relative;z-index:1;font-size:27px;margin:13px 0 6px}.dossier>p{position:relative;z-index:1;color:#91a5a9;font-size:11px;line-height:1.55;min-height:52px}.dossierScores{position:relative;z-index:1;display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:16px 0}.dossierScores span{padding:10px;border:1px solid #29464e;border-radius:10px;background:#07171c}.dossierScores small,.dossierScores b{display:block}.dossierScores small{font:800 7px ui-monospace;color:#708a90}.dossierScores b{font-size:17px;margin-top:3px}.sceneList{position:relative;z-index:1;display:grid;gap:6px}.sceneList a{display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;padding:10px;border:1px solid #2c4951;border-radius:11px;background:#08191e}.sceneList a:hover{border-color:#54808b;background:#0c252c}.sceneList a>span{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;background:#11313a;color:#e4bd58;font:900 9px ui-monospace}.sceneList b,.sceneList small{display:block}.sceneList b{font-size:10px}.sceneList small{font-size:8px;color:#779096;margin-top:2px}.sceneList i{font-style:normal;font-size:8px;color:#68d6e0}.dossierActions{display:flex;gap:7px;margin-top:14px}.dossierActions a{padding:10px 12px;border:1px solid #35525a;border-radius:9px;background:#0b1d22;color:#c7d3d4;font-size:9px;font-weight:850}.dossierActions a.primary{background:linear-gradient(180deg,#e9c86f,#c49a3e);border-color:#d4ad50;color:#181309}.archiveEmpty{margin-top:14px;padding:55px 20px;text-align:center;border:1px dashed #31505a;border-radius:18px;background:#08181d}.archiveEmpty>div{font-size:42px;color:#e4bd58}.archiveEmpty h2{font-size:24px}.archiveEmpty p{color:#8da1a5}.archiveEmpty a{display:inline-flex;margin-top:10px;padding:10px 13px;border:1px solid #38545c;border-radius:9px}@media(max-width:900px){.archiveTop nav{display:none}.archiveHero{grid-template-columns:1fr}.archiveCount{border-left:0;border-top:1px solid #38525a}.dossierGrid{grid-template-columns:1fr}.archiveContent{padding:14px 10px 60px}.archiveHero{padding:22px}.archiveHero h1{font-size:32px}.dossier{padding:18px}.dossierScores{grid-template-columns:1fr 1fr 1fr}}`;

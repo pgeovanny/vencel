@@ -1,0 +1,76 @@
+name: JurisQuest User E2E
+
+on:
+  push:
+    branches: [jurisquest-commercial-20260916]
+    paths-ignore:
+      - '**/*.md'
+  workflow_dispatch:
+
+concurrency:
+  group: jurisquest-user-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  student-journey:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install application
+        run: npm install --no-audit --no-fund
+
+      - name: Install browser runner
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Build JurisQuest
+        run: npm run build
+
+      - name: Start local production build
+        run: |
+          npm run start > /tmp/jurisquest-server.log 2>&1 &
+          echo $! > /tmp/jurisquest-server.pid
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:3000/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/jurisquest-server.log
+          exit 1
+
+      - name: Read public Supabase config from app
+        run: |
+          node - <<'NODE' >> "$GITHUB_ENV"
+          const fs=require('fs');
+          const s=fs.readFileSync('lib/env.ts','utf8');
+          const url=s.match(/https:\/\/[a-z0-9]+\.supabase\.co/)?.[0];
+          const key=s.match(/sb_publishable_[A-Za-z0-9_-]+/)?.[0];
+          if(!url||!key) process.exit(1);
+          console.log(`QA_SUPABASE_URL=${url}`);
+          console.log(`QA_SUPABASE_KEY=${key}`);
+          NODE
+          echo 'QA_BASE_URL=http://127.0.0.1:3000' >> "$GITHUB_ENV"
+
+      - name: Run student journey in a real browser session
+        run: |
+          sed -i 's/chromium.launch({headless:true})/chromium.launch({headless:false})/' qa/user-flow.spec.mjs
+          xvfb-run -a node qa/user-flow.spec.mjs
+
+      - name: Print server log on failure
+        if: failure()
+        run: tail -n 300 /tmp/jurisquest-server.log || true
+
+      - name: Upload QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jurisquest-user-e2e-${{ github.run_id }}
+          path: qa-artifacts/
+          if-no-files-found: warn
+          retention-days: 7

@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/client';
 
 type Status = 'idle' | 'loading' | 'done' | 'error';
 
+const wait=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
+
 export default function Signup() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -52,14 +54,20 @@ export default function Signup() {
         return;
       }
 
-      const auth = await supabase.auth.signInWithPassword({ email: normalized, password });
-      if (auth.error) {
-        setStatus('done');
-        setMessage('Conta criada. Entre com seu e-mail e senha para continuar.');
-        return;
+      // Usuários criados pela função administrativa podem levar um instante para
+      // ficar disponíveis no endpoint de senha. Absorvemos essa janela aqui para
+      // que o primeiro acesso não pareça uma falha de cadastro.
+      for (const delay of [0, 180, 360, 720, 1200]) {
+        if (delay) await wait(delay);
+        const auth = await supabase.auth.signInWithPassword({ email: normalized, password });
+        if (!auth.error) {
+          window.location.href = '/dashboard';
+          return;
+        }
       }
 
-      window.location.href = '/dashboard';
+      setStatus('done');
+      setMessage('Conta criada. Seu acesso está pronto; entre com seu e-mail e senha para continuar.');
     } catch (err) {
       setStatus('error');
       setMessage(err instanceof Error ? err.message : 'Falha inesperada ao criar a conta.');

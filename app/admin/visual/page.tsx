@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import VisualStudio from '@/components/admin/visual-studio';
+import AssetLibrary from '@/components/admin/asset-library';
 
 export default async function VisualAdmin() {
   const sb = await createClient();
@@ -12,9 +13,12 @@ export default async function VisualAdmin() {
   const [{ data: presets }, { data: assets }, { data: missions }, { data: runtimeSettings }] = await Promise.all([
     sb.from('game_visual_presets').select('*').order('sort_order'),
     sb.from('game_asset_catalog').select('*').eq('active', true).order('sort_order'),
-    sb.from('missions').select('id,title,status,mission_json').in('status', ['draft','published']).order('created_at', { ascending: false }),
+    sb.from('missions_admin').select('id,title,status,mission_json').in('status', ['draft','published']).order('created_at', { ascending: false }),
     sb.from('game_runtime_settings').select('*').eq('id', 1).maybeSingle(),
   ]);
 
-  return <VisualStudio presets={presets || []} assets={assets || []} missions={missions || []} runtimeSettings={runtimeSettings || null} />;
+  return <>
+    <VisualStudio presets={presets || []} assets={assets || []} missions={missions || []} runtimeSettings={runtimeSettings || null} />
+    <AssetLibrary presets={presets || []} assets={assets || []}/>
+  </>;
 }
