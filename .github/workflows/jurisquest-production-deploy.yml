@@ -12,6 +12,7 @@ jobs:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: team_uDhFWiDQ6N65FSbGCFH1KF9S
       VERCEL_PROJECT_ID: prj_LeCuaE0l0bUBTpyKA3oFj6WDVMJ0
+      VERCEL_SCOPE: geovanny8-6963s-projects
     steps:
       - uses: actions/checkout@v4
       - name: Verify deployment credential
@@ -19,10 +20,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install --global vercel@latest
-      - name: Link project
-        run: |
-          mkdir -p .vercel
-          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > .vercel/project.json
+      - run: npm install --global vercel@59.20.0
       - name: Deploy production
-        run: vercel deploy --prod --yes --token "$VERCEL_TOKEN"
+        run: |
+          rm -rf .vercel
+          vercel deploy --prod --yes --project "$VERCEL_PROJECT_ID" --scope "$VERCEL_SCOPE" --token "$VERCEL_TOKEN"
